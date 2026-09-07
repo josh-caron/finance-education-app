@@ -1,0 +1,34 @@
+{
+  "name": "@fin/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json",
+    "cf-typegen": "wrangler types",
+    "seed:generate": "tsx scripts/generate-seed.ts",
+    "db:migrate:local": "wrangler d1 migrations apply fin-edu-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply fin-edu-db --remote",
+    "db:seed:local": "pnpm seed:generate && wrangler d1 execute fin-edu-db --local --file=./.seed/content.sql",
+    "db:seed:remote": "pnpm seed:generate && wrangler d1 execute fin-edu-db --remote --file=./.seed/content.sql"
+  },
+  "dependencies": {
+    "@better-auth/expo": "^1.7.3",
+    "@fin/content": "workspace:*",
+    "@fin/core": "workspace:*",
+    "@fin/db": "workspace:*",
+    "better-auth": "^1.7.3",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.7",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260907.1",
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
+    "typescript": "~6.0.3",
+    "wrangler": "^4.129.1"
+  }
+}

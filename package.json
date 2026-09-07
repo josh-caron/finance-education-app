@@ -1,0 +1,26 @@
+{
+  "name": "finance-education-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev:mobile": "pnpm --filter @fin/mobile dev",
+    "dev:api": "pnpm --filter @fin/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @fin/db generate",
+    "db:migrate:local": "pnpm --filter @fin/api db:migrate:local",
+    "db:seed:local": "pnpm --filter @fin/api db:seed:local"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "typescript": "~6.0.3"
+  }
+}

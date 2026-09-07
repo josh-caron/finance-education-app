@@ -1,0 +1,11 @@
+{
+  // The seed generator runs under Node (tsx), not the Workers runtime, so it
+  // needs Node's types instead of @cloudflare/workers-types. Resolution stays
+  // the same as the rest of the workspace so it can import @fin/* source.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["./*.ts"]
+}
