@@ -59,6 +59,7 @@ export default function LessonScreen() {
       return apiPost<AttemptResult>(`/api/progress/lessons/${lessonId}/attempts`, {
         exerciseId: exercise.id,
         answer,
+        localDay: toDayKey(new Date()),
       });
     },
     onSuccess: setResult,
@@ -71,7 +72,7 @@ export default function LessonScreen() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     onSuccess: (data) => {
-      levelBefore.current = levelFromXp(data.totalXp - data.xpEarned);
+      levelBefore.current = levelFromXp(data.totalXp - data.bonus);
       setCompletion(data);
       // The skill tree and the header stats both moved.
       void queryClient.invalidateQueries({ queryKey: ['units'] });
@@ -110,6 +111,12 @@ export default function LessonScreen() {
             {leveledUp ? `Level ${completion.level}` : 'Lesson complete'}
           </ThemedText>
 
+          {completion.practice ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              You already banked the XP for these exercises.
+            </ThemedText>
+          ) : null}
+
           <LevelRing
             level={completion.level}
             fraction={
@@ -119,8 +126,13 @@ export default function LessonScreen() {
             }
           />
 
-          <ThemedText style={[styles.xpGain, { color: theme.brand }]}>
-            +{completion.xpEarned} XP
+          <ThemedText
+            style={[
+              styles.xpGain,
+              { color: completion.practice ? theme.textSecondary : theme.brand },
+            ]}
+          >
+            {completion.practice ? 'Practice run' : `+${completion.xpEarned} XP`}
           </ThemedText>
         </View>
 
@@ -193,7 +205,11 @@ export default function LessonScreen() {
           ]}
         >
           <ThemedText type="smallBold" themeColor={result.correct ? 'success' : 'danger'}>
-            {result.correct ? `Correct · +${result.xpAwarded} XP` : 'Not quite'}
+            {!result.correct
+              ? 'Not quite'
+              : result.xpAwarded > 0
+                ? `Correct · +${result.xpAwarded} XP`
+                : 'Correct · practice, already banked'}
           </ThemedText>
 
           {result.expected ? <ThemedText type="small">Answer: {result.expected}</ThemedText> : null}

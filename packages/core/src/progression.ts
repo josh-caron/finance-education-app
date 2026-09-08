@@ -11,20 +11,39 @@ export const XP_FIRST_TRY_BONUS = 5;
 /** Awarded once, the first time a lesson is completed. */
 export const XP_LESSON_COMPLETE_BONUS = 20;
 
-export interface ExerciseScore {
+export interface AttemptOutcome {
   correct: boolean;
-  attempts: number;
+  /** 1 for the learner's first ever submission for this exercise. */
+  attemptNumber: number;
+  /** Whether this exercise has already been answered correctly at some point. */
+  alreadySolved: boolean;
 }
 
-export function xpForExercise({ correct, attempts }: ExerciseScore): number {
-  if (!correct) return 0;
-  return XP_PER_CORRECT_EXERCISE + (attempts <= 1 ? XP_FIRST_TRY_BONUS : 0);
+/**
+ * XP for a single submission, and the only place exercise XP is decided.
+ *
+ * An exercise pays out at most once, ever. Replaying a finished lesson is free
+ * practice worth nothing, so XP cannot be farmed by repeating easy content.
+ */
+export function xpForAttempt({ correct, attemptNumber, alreadySolved }: AttemptOutcome): number {
+  if (!correct || alreadySolved) return 0;
+  return XP_PER_CORRECT_EXERCISE + (attemptNumber <= 1 ? XP_FIRST_TRY_BONUS : 0);
 }
 
-export function xpForLesson(scores: ExerciseScore[], firstCompletion: boolean): number {
-  const exerciseXp = scores.reduce((total, score) => total + xpForExercise(score), 0);
-  const allCorrect = scores.length > 0 && scores.every((s) => s.correct);
-  return exerciseXp + (firstCompletion && allCorrect ? XP_LESSON_COMPLETE_BONUS : 0);
+/** Paid once, on the first completion of a lesson. */
+export function lessonCompletionBonus(firstCompletion: boolean): number {
+  return firstCompletion ? XP_LESSON_COMPLETE_BONUS : 0;
+}
+
+/**
+ * Share of exercises answered correctly on the first try, 0-100, over one pass
+ * through a lesson.
+ */
+export function firstTryRate(attempts: { correct: boolean; attemptNumber: number }[]): number {
+  if (attempts.length === 0) return 0;
+
+  const clean = attempts.filter((a) => a.correct && a.attemptNumber <= 1).length;
+  return Math.round((clean / attempts.length) * 100);
 }
 
 /** XP needed to reach each level, from level 1 up. Quadratic so levels slow down. */

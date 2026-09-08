@@ -34,9 +34,14 @@ Before adding code, check whether it belongs in a package rather than an app:
 
 ## Migrations
 
-Never hand-edit a file in `packages/db/drizzle`. Change the schema, run `pnpm db:generate`,
-and commit the generated SQL with the schema change in the same commit. Applying a
-migration to the deployed database is a deliberate step, not part of deploy.
+Never hand-edit a generated file in `packages/db/drizzle`. Change the schema, run
+`pnpm db:generate`, and commit the generated SQL with the schema change in the same commit.
+Applying a migration to the deployed database is a deliberate step, not part of deploy.
+
+Data backfills are the exception: drizzle-kit only generates structural changes, so a
+backfill goes in its own hand-written file with the next number and a comment saying why.
+Wrangler applies every file in the folder in order; drizzle-kit ignores files it did not
+create, so `pnpm db:generate` leaves them alone.
 
 ## Meetings
 

@@ -44,6 +44,12 @@ export const lessonProgress = sqliteTable(
     status: text('status').$type<LessonProgressStatus>().notNull().default('in_progress'),
     /** Highest fraction of exercises answered correctly in one pass, 0-100. */
     bestScore: integer('best_score').notNull().default(0),
+    /**
+     * Times this lesson has been completed. Attempts are stamped with the run
+     * they belong to, so a replay is scored on its own attempts rather than
+     * against the learner's whole history.
+     */
+    completions: integer('completions').notNull().default(0),
     xpEarned: integer('xp_earned').notNull().default(0),
     completedAt: integer('completed_at', { mode: 'timestamp' }),
     updatedAt: integer('updated_at', { mode: 'timestamp' })
@@ -70,7 +76,9 @@ export const exerciseAttempts = sqliteTable(
     lessonId: text('lesson_id')
       .notNull()
       .references(() => lessons.id, { onDelete: 'cascade' }),
-    /** 1 for the first submission of this exercise in the current lesson run. */
+    /** Which pass through the lesson this attempt belongs to, counting from 1. */
+    runNumber: integer('run_number').notNull().default(1),
+    /** 1 for the first submission of this exercise within `runNumber`. */
     attemptNumber: integer('attempt_number').notNull(),
     isCorrect: integer('is_correct', { mode: 'boolean' }).notNull(),
     submitted: text('submitted', { mode: 'json' }).$type<Answer>().notNull(),

@@ -31,12 +31,22 @@ export interface LessonDetail {
 export interface AttemptResult extends GradeResult {
   attemptNumber: number;
   xpAwarded: number;
+  /** True when this exercise was already banked, so the pass earned nothing. */
+  practice: boolean;
+  totalXp: number;
+  level: number;
+  xpIntoLevel: number;
+  xpToNext: number;
 }
 
 export interface LessonCompletion {
   xpEarned: number;
+  /** The completion bonus portion of xpEarned. */
+  bonus: number;
   score: number;
   firstCompletion: boolean;
+  /** True when the run earned nothing new, so it was practice. */
+  practice: boolean;
   totalXp: number;
   level: number;
   xpIntoLevel: number;

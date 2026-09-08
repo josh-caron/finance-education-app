@@ -2,39 +2,78 @@ import { describe, expect, it } from 'vitest';
 
 import {
   advanceStreak,
+  firstTryRate,
   isStreakActive,
+  lessonCompletionBonus,
   levelForXp,
   recentDayKeys,
   streakHealth,
   toDayKey,
   weekdayLabel,
-  xpForExercise,
-  xpForLesson,
+  xpForAttempt,
   XP_FIRST_TRY_BONUS,
   XP_LESSON_COMPLETE_BONUS,
   XP_PER_CORRECT_EXERCISE,
   type StreakState,
 } from '../progression';
 
-describe('xp', () => {
+describe('xpForAttempt', () => {
   it('pays a bonus only for a first-try correct answer', () => {
-    expect(xpForExercise({ correct: true, attempts: 1 })).toBe(
+    expect(xpForAttempt({ correct: true, attemptNumber: 1, alreadySolved: false })).toBe(
       XP_PER_CORRECT_EXERCISE + XP_FIRST_TRY_BONUS,
     );
-    expect(xpForExercise({ correct: true, attempts: 3 })).toBe(XP_PER_CORRECT_EXERCISE);
-    expect(xpForExercise({ correct: false, attempts: 1 })).toBe(0);
+    expect(xpForAttempt({ correct: true, attemptNumber: 3, alreadySolved: false })).toBe(
+      XP_PER_CORRECT_EXERCISE,
+    );
   });
 
-  it('adds the lesson bonus only on a flawless first completion', () => {
-    const perfect = [
-      { correct: true, attempts: 1 },
-      { correct: true, attempts: 1 },
-    ];
-    const base = 2 * (XP_PER_CORRECT_EXERCISE + XP_FIRST_TRY_BONUS);
+  it('pays nothing for a wrong answer', () => {
+    expect(xpForAttempt({ correct: false, attemptNumber: 1, alreadySolved: false })).toBe(0);
+  });
 
-    expect(xpForLesson(perfect, true)).toBe(base + XP_LESSON_COMPLETE_BONUS);
-    expect(xpForLesson(perfect, false)).toBe(base);
-    expect(xpForLesson([...perfect, { correct: false, attempts: 2 }], true)).toBe(base);
+  it('pays nothing for an exercise already solved, however it is answered', () => {
+    expect(xpForAttempt({ correct: true, attemptNumber: 1, alreadySolved: true })).toBe(0);
+    expect(xpForAttempt({ correct: true, attemptNumber: 9, alreadySolved: true })).toBe(0);
+    expect(xpForAttempt({ correct: false, attemptNumber: 1, alreadySolved: true })).toBe(0);
+  });
+
+  it('makes replaying a finished lesson worth nothing', () => {
+    const replay = [1, 2, 3].map(() =>
+      xpForAttempt({ correct: true, attemptNumber: 1, alreadySolved: true }),
+    );
+    expect(replay.reduce((a, b) => a + b, 0)).toBe(0);
+  });
+});
+
+describe('lessonCompletionBonus', () => {
+  it('pays only on the first completion', () => {
+    expect(lessonCompletionBonus(true)).toBe(XP_LESSON_COMPLETE_BONUS);
+    expect(lessonCompletionBonus(false)).toBe(0);
+  });
+});
+
+describe('firstTryRate', () => {
+  it('scores a clean run at 100', () => {
+    expect(
+      firstTryRate([
+        { correct: true, attemptNumber: 1 },
+        { correct: true, attemptNumber: 1 },
+      ]),
+    ).toBe(100);
+  });
+
+  it('discounts exercises that took more than one attempt', () => {
+    expect(
+      firstTryRate([
+        { correct: true, attemptNumber: 1 },
+        { correct: true, attemptNumber: 2 },
+        { correct: true, attemptNumber: 1 },
+      ]),
+    ).toBe(67);
+  });
+
+  it('is zero with nothing attempted', () => {
+    expect(firstTryRate([])).toBe(0);
   });
 });
 
