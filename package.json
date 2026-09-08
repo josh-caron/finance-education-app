@@ -4,9 +4,10 @@
   "private": true,
   "packageManager": "pnpm@10.20.0",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
+    "setup:local": "node scripts/setup.mjs",
     "dev:mobile": "pnpm --filter @fin/mobile dev",
     "dev:api": "pnpm --filter @fin/api dev",
     "build": "pnpm -r build",
