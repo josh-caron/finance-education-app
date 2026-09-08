@@ -1,7 +1,7 @@
-import { toDayKey } from '@fin/core';
+import { levelForXp, toDayKey } from '@fin/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -11,8 +11,10 @@ import {
   toAnswer,
   type Draft,
 } from '@/components/exercises/exercise-view';
+import { LevelRing } from '@/components/level-ring';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
+import { XpBar } from '@/components/xp-bar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch, apiPost } from '@/lib/api';
@@ -31,6 +33,9 @@ export default function LessonScreen() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [completion, setCompletion] = useState<LessonCompletion | null>(null);
+  // Snapshotted when the lesson opens so the summary can tell a level-up apart
+  // from ordinary XP gain.
+  const levelBefore = useRef(1);
 
   const lessonQuery = useQuery({
     queryKey: ['lesson', lessonId],
@@ -54,6 +59,7 @@ export default function LessonScreen() {
       return apiPost<AttemptResult>(`/api/progress/lessons/${lessonId}/attempts`, {
         exerciseId: exercise.id,
         answer,
+        localDay: toDayKey(new Date()),
       });
     },
     onSuccess: setResult,
@@ -66,6 +72,7 @@ export default function LessonScreen() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     onSuccess: (data) => {
+      levelBefore.current = levelFromXp(data.totalXp - data.bonus);
       setCompletion(data);
       // The skill tree and the header stats both moved.
       void queryClient.invalidateQueries({ queryKey: ['units'] });
@@ -95,16 +102,52 @@ export default function LessonScreen() {
   const lesson = lessonQuery.data;
 
   if (completion) {
+    const leveledUp = completion.level > levelBefore.current;
+
     return (
       <Screen>
-        <ThemedText type="subtitle">Lesson complete</ThemedText>
-        <ThemedText type="default">
-          +{completion.xpEarned} XP · {completion.score}% first-try · {completion.currentStreak} day
-          streak
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {completion.xpToNext} XP to level {completion.level + 1}
-        </ThemedText>
+        <View style={styles.celebration}>
+          <ThemedText type="subtitle">
+            {leveledUp ? `Level ${completion.level}` : 'Lesson complete'}
+          </ThemedText>
+
+          {completion.practice ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              You already banked the XP for these exercises.
+            </ThemedText>
+          ) : null}
+
+          <LevelRing
+            level={completion.level}
+            fraction={
+              completion.xpIntoLevel + completion.xpToNext === 0
+                ? 0
+                : completion.xpIntoLevel / (completion.xpIntoLevel + completion.xpToNext)
+            }
+          />
+
+          <ThemedText
+            style={[
+              styles.xpGain,
+              { color: completion.practice ? theme.textSecondary : theme.brand },
+            ]}
+          >
+            {completion.practice ? 'Practice run' : `+${completion.xpEarned} XP`}
+          </ThemedText>
+        </View>
+
+        <XpBar
+          level={completion.level}
+          xpIntoLevel={completion.xpIntoLevel}
+          xpToNext={completion.xpToNext}
+        />
+
+        <View style={styles.summary}>
+          <SummaryTile label="First try" value={`${completion.score}%`} />
+          <SummaryTile label="Streak" value={`${completion.currentStreak}d`} />
+          <SummaryTile label="Total XP" value={String(completion.totalXp)} />
+        </View>
+
         <Button label="Back to the tree" onPress={() => router.back()} />
       </Screen>
     );
@@ -162,7 +205,11 @@ export default function LessonScreen() {
           ]}
         >
           <ThemedText type="smallBold" themeColor={result.correct ? 'success' : 'danger'}>
-            {result.correct ? `Correct · +${result.xpAwarded} XP` : 'Not quite'}
+            {!result.correct
+              ? 'Not quite'
+              : result.xpAwarded > 0
+                ? `Correct · +${result.xpAwarded} XP`
+                : 'Correct · practice, already banked'}
           </ThemedText>
 
           {result.expected ? <ThemedText type="small">Answer: {result.expected}</ThemedText> : null}
@@ -203,8 +250,38 @@ export default function LessonScreen() {
   );
 }
 
+function levelFromXp(totalXp: number): number {
+  return levelForXp(Math.max(0, totalXp)).level;
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.tile, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedText type="smallBold" style={styles.tileValue}>
+        {value}
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   centered: { alignItems: 'center', justifyContent: 'center' },
+  celebration: { alignItems: 'center', gap: Spacing.three },
+  xpGain: { fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  summary: { flexDirection: 'row', gap: Spacing.two },
+  tile: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    alignItems: 'center',
+  },
+  tileValue: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
   header: {
     flexDirection: 'row',
     alignItems: 'baseline',

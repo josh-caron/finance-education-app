@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   dailyActivity,
@@ -11,10 +11,13 @@ import {
 } from '@fin/db';
 import {
   advanceStreak,
+  firstTryRate,
   gradeExercise,
+  lessonCompletionBonus,
   levelForXp,
-  xpForExercise,
-  xpForLesson,
+  recentDayKeys,
+  streakHealth,
+  xpForAttempt,
   type Answer,
   type StreakState,
 } from '@fin/core';
@@ -32,29 +35,55 @@ const answerSchema: z.ZodType<Answer> = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('computed_answer'), value: z.number().finite() }),
 ]);
 
+/** YYYY-MM-DD in the learner's local time; streaks follow their calendar, not UTC. */
+const dayKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD day key');
+
 const submitSchema = z.object({
   exerciseId: z.string().min(1),
   answer: answerSchema,
+  /** Needed here because XP lands on submission, and lands in the day's rollup. */
+  localDay: dayKeySchema,
 });
-
-/** YYYY-MM-DD in the learner's local time; streaks follow their calendar, not UTC. */
-const dayKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD day key');
 
 const completeSchema = z.object({
   localDay: dayKeySchema,
   timezone: z.string().optional(),
 });
 
-/** The caller's profile: XP, level and streak. */
+/** How many days of history the streak strip shows. */
+const STREAK_WINDOW_DAYS = 7;
+
+/**
+ * The caller's profile: XP, level, streak and recent daily activity.
+ *
+ * `localDay` comes from the client because streaks follow the learner's
+ * calendar, not the Worker's UTC clock. It falls back to UTC today so the
+ * endpoint stays useful without it.
+ */
 progressRoutes.get('/me', async (c) => {
   const db = c.get('db');
   const user = c.get('user')!;
 
-  const profile = await getOrCreateProfile(c.get('db'), user.id);
-  const lessonRows = await db
-    .select()
-    .from(lessonProgress)
-    .where(eq(lessonProgress.userId, user.id));
+  const requestedDay = c.req.query('localDay');
+  const today =
+    requestedDay && dayKeySchema.safeParse(requestedDay).success
+      ? requestedDay
+      : new Date().toISOString().slice(0, 10);
+
+  const profile = await getOrCreateProfile(db, user.id);
+
+  const window = recentDayKeys(today, STREAK_WINDOW_DAYS);
+  const windowStart = window[0]!;
+
+  const [lessonRows, activityRows] = await Promise.all([
+    db.select().from(lessonProgress).where(eq(lessonProgress.userId, user.id)),
+    db
+      .select()
+      .from(dailyActivity)
+      .where(and(eq(dailyActivity.userId, user.id), gte(dailyActivity.day, windowStart))),
+  ]);
+
+  const activityByDay = new Map(activityRows.map((row) => [row.day, row]));
 
   return c.json({
     totalXp: profile.totalXp,
@@ -62,6 +91,17 @@ progressRoutes.get('/me', async (c) => {
     currentStreak: profile.currentStreak,
     longestStreak: profile.longestStreak,
     lastActiveDay: profile.lastActiveDay,
+    streakHealth: streakHealth(toStreakState(profile), today),
+    today,
+    recentDays: window.map((day) => {
+      const activity = activityByDay.get(day);
+
+      return {
+        day,
+        xpEarned: activity?.xpEarned ?? 0,
+        lessonsCompleted: activity?.lessonsCompleted ?? 0,
+      };
+    }),
     lessons: lessonRows.map((row) => ({
       lessonId: row.lessonId,
       status: row.status,
@@ -72,8 +112,11 @@ progressRoutes.get('/me', async (c) => {
 });
 
 /**
- * Grades one submission. Grading runs here rather than on the client so the
- * answer key never has to be shipped, and every attempt is logged.
+ * Grades one submission and banks any XP it earns.
+ *
+ * Grading runs here rather than on the client so the answer key never has to be
+ * shipped. XP is awarded at submission time and only the first time an exercise
+ * is solved, which is what stops a finished lesson from being farmed.
  */
 progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
   const db = c.get('db');
@@ -95,34 +138,91 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
     return c.json({ error: 'Exercise not found in this lesson' }, 404);
   }
 
-  const previousAttempts = await countAttempts(db, user.id, exercise.id);
-  const attemptNumber = previousAttempts + 1;
-  const result = gradeExercise(exercise.payload, parsed.data.answer);
-  const xpAwarded = xpForExercise({ correct: result.correct, attempts: attemptNumber });
+  const [progressRow] = await db
+    .select({ completions: lessonProgress.completions })
+    .from(lessonProgress)
+    .where(and(eq(lessonProgress.userId, user.id), eq(lessonProgress.lessonId, lessonId)))
+    .limit(1);
 
-  await db.insert(exerciseAttempts).values({
+  const runNumber = (progressRow?.completions ?? 0) + 1;
+
+  const priorAttempts = await db
+    .select({ isCorrect: exerciseAttempts.isCorrect, runNumber: exerciseAttempts.runNumber })
+    .from(exerciseAttempts)
+    .where(and(eq(exerciseAttempts.userId, user.id), eq(exerciseAttempts.exerciseId, exercise.id)));
+
+  // Position within this pass, so "first try" stays meaningful on a replay.
+  const attemptNumber =
+    priorAttempts.filter((attempt) => attempt.runNumber === runNumber).length + 1;
+  // Banked once, ever. This is what makes a replay worth no XP.
+  const alreadySolved = priorAttempts.some((attempt) => attempt.isCorrect);
+
+  const result = gradeExercise(exercise.payload, parsed.data.answer);
+  const xpAwarded = xpForAttempt({ correct: result.correct, attemptNumber, alreadySolved });
+
+  const profile = await getOrCreateProfile(db, user.id);
+
+  const logAttempt = db.insert(exerciseAttempts).values({
     id: crypto.randomUUID(),
     userId: user.id,
     lessonId,
     exerciseId: exercise.id,
+    runNumber,
     attemptNumber,
     isCorrect: result.correct,
     submitted: parsed.data.answer,
     xpAwarded,
   });
 
-  await db
+  const markInProgress = db
     .insert(lessonProgress)
     .values({ userId: user.id, lessonId, status: 'in_progress' })
     .onConflictDoNothing();
 
-  return c.json({ ...result, attemptNumber, xpAwarded });
+  if (xpAwarded > 0) {
+    await db.batch([
+      logAttempt,
+      markInProgress,
+      db
+        .update(learnerProfiles)
+        .set({
+          totalXp: sql`${learnerProfiles.totalXp} + ${xpAwarded}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(learnerProfiles.userId, user.id)),
+      db
+        .insert(dailyActivity)
+        .values({ userId: user.id, day: parsed.data.localDay, xpEarned: xpAwarded })
+        .onConflictDoUpdate({
+          target: [dailyActivity.userId, dailyActivity.day],
+          set: { xpEarned: sql`${dailyActivity.xpEarned} + ${xpAwarded}` },
+        }),
+    ]);
+  } else {
+    await db.batch([logAttempt, markInProgress]);
+  }
+
+  const totalXp = profile.totalXp + xpAwarded;
+
+  return c.json({
+    ...result,
+    attemptNumber,
+    xpAwarded,
+    /** True when the exercise was already banked, so this pass was practice. */
+    practice: alreadySolved,
+    totalXp,
+    ...levelForXp(totalXp),
+  });
 });
 
 /**
- * Closes out a lesson: recomputes the score from the logged attempts, awards XP
- * and advances the streak. Scores are derived server-side, so a client cannot
- * claim a perfect run it did not earn.
+ * Closes out a lesson: scores the run, pays the completion bonus and advances
+ * the streak.
+ *
+ * Exercise XP was already banked as each answer came in, so this adds only the
+ * bonus. Scores are derived from the logged attempts, never taken from the
+ * client, and only attempts since the last completion count, so a replay is
+ * scored on its own merits.
  */
 progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
   const db = c.get('db');
@@ -139,47 +239,60 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
     return c.json({ error: 'Lesson not found' }, 404);
   }
 
-  const lessonExercises = await db
-    .select({ id: exercises.id })
-    .from(exercises)
-    .where(eq(exercises.lessonId, lessonId))
-    .orderBy(asc(exercises.sortOrder));
-
-  const attempts = await db
-    .select()
-    .from(exerciseAttempts)
-    .where(and(eq(exerciseAttempts.userId, user.id), eq(exerciseAttempts.lessonId, lessonId)))
-    .orderBy(asc(exerciseAttempts.attemptNumber));
-
-  const scores = lessonExercises.map((exercise) => {
-    const forExercise = attempts.filter((attempt) => attempt.exerciseId === exercise.id);
-    const firstCorrect = forExercise.find((attempt) => attempt.isCorrect);
-
-    return {
-      correct: firstCorrect !== undefined,
-      attempts: firstCorrect?.attemptNumber ?? forExercise.length,
-    };
-  });
-
-  const answered = scores.filter((score) => score.correct).length;
-  if (lessonExercises.length === 0 || answered < lessonExercises.length) {
-    return c.json({ error: 'Every exercise must be answered correctly first', answered }, 409);
-  }
-
   const [existing] = await db
     .select()
     .from(lessonProgress)
     .where(and(eq(lessonProgress.userId, user.id), eq(lessonProgress.lessonId, lessonId)))
     .limit(1);
 
+  const runNumber = (existing?.completions ?? 0) + 1;
+
+  const [lessonExercises, runAttempts] = await Promise.all([
+    db
+      .select({ id: exercises.id })
+      .from(exercises)
+      .where(eq(exercises.lessonId, lessonId))
+      .orderBy(asc(exercises.sortOrder)),
+    db
+      .select()
+      .from(exerciseAttempts)
+      .where(
+        and(
+          eq(exerciseAttempts.userId, user.id),
+          eq(exerciseAttempts.lessonId, lessonId),
+          eq(exerciseAttempts.runNumber, runNumber),
+        ),
+      )
+      .orderBy(asc(exerciseAttempts.attemptNumber)),
+  ]);
+
+  const outcomes = lessonExercises.map((exercise) => {
+    const forExercise = runAttempts.filter((attempt) => attempt.exerciseId === exercise.id);
+    const firstCorrect = forExercise.find((attempt) => attempt.isCorrect);
+
+    return {
+      correct: firstCorrect !== undefined,
+      attemptNumber: firstCorrect?.attemptNumber ?? forExercise.length,
+    };
+  });
+
+  const answered = outcomes.filter((outcome) => outcome.correct).length;
+  if (lessonExercises.length === 0 || answered < lessonExercises.length) {
+    return c.json({ error: 'Every exercise must be answered correctly first', answered }, 409);
+  }
+
   const firstCompletion = existing?.status !== 'completed';
-  const xpEarned = xpForLesson(scores, firstCompletion);
-  const score = Math.round(
-    (scores.filter((s) => s.correct && s.attempts <= 1).length / scores.length) * 100,
-  );
+  const bonus = lessonCompletionBonus(firstCompletion);
+  const score = firstTryRate(outcomes);
+
+  // Exercise XP already landed on submission; only the bonus is new here. The
+  // total reported back is what this run was worth end to end.
+  const runXp = runAttempts.reduce((total, attempt) => total + attempt.xpAwarded, 0);
+  const xpEarned = runXp + bonus;
 
   const profile = await getOrCreateProfile(db, user.id);
   const streak = advanceStreak(toStreakState(profile), parsed.data.localDay);
+  const now = new Date();
 
   // D1 has no interactive transactions; these run as a batch so the profile,
   // lesson row and daily rollup cannot land partially.
@@ -192,8 +305,9 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
         status: 'completed',
         bestScore: score,
         xpEarned,
-        completedAt: new Date(),
-        updatedAt: new Date(),
+        completions: runNumber,
+        completedAt: now,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: [lessonProgress.userId, lessonProgress.lessonId],
@@ -201,19 +315,20 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
           status: 'completed',
           bestScore: sql`max(${lessonProgress.bestScore}, ${score})`,
           xpEarned: sql`${lessonProgress.xpEarned} + ${xpEarned}`,
-          completedAt: new Date(),
-          updatedAt: new Date(),
+          completions: runNumber,
+          completedAt: now,
+          updatedAt: now,
         },
       }),
     db
       .update(learnerProfiles)
       .set({
-        totalXp: sql`${learnerProfiles.totalXp} + ${xpEarned}`,
+        totalXp: sql`${learnerProfiles.totalXp} + ${bonus}`,
         currentStreak: streak.currentStreak,
         longestStreak: streak.longestStreak,
         lastActiveDay: streak.lastActiveDay,
         timezone: parsed.data.timezone ?? profile.timezone,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .where(eq(learnerProfiles.userId, user.id)),
     db
@@ -221,24 +336,27 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
       .values({
         userId: user.id,
         day: parsed.data.localDay,
-        xpEarned,
+        xpEarned: bonus,
         lessonsCompleted: firstCompletion ? 1 : 0,
       })
       .onConflictDoUpdate({
         target: [dailyActivity.userId, dailyActivity.day],
         set: {
-          xpEarned: sql`${dailyActivity.xpEarned} + ${xpEarned}`,
+          xpEarned: sql`${dailyActivity.xpEarned} + ${bonus}`,
           lessonsCompleted: sql`${dailyActivity.lessonsCompleted} + ${firstCompletion ? 1 : 0}`,
         },
       }),
   ]);
 
-  const totalXp = profile.totalXp + xpEarned;
+  const totalXp = profile.totalXp + bonus;
 
   return c.json({
     xpEarned,
+    bonus,
     score,
     firstCompletion,
+    /** True when nothing new was earned, so the UI can frame it as practice. */
+    practice: xpEarned === 0,
     totalXp,
     ...levelForXp(totalXp),
     currentStreak: streak.currentStreak,
