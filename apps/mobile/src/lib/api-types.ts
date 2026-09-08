@@ -1,4 +1,4 @@
-import type { GradeResult, PublicExercise } from '@fin/core';
+import type { GradeResult, PublicExercise, StreakHealth } from '@fin/core';
 
 /** Response shapes returned by apps/api. Kept next to the client that reads them. */
 
@@ -45,6 +45,13 @@ export interface LessonCompletion {
   longestStreak: number;
 }
 
+export interface DailyActivity {
+  /** YYYY-MM-DD in the learner's local time. */
+  day: string;
+  xpEarned: number;
+  lessonsCompleted: number;
+}
+
 export interface LearnerProfile {
   totalXp: number;
   level: number;
@@ -53,5 +60,10 @@ export interface LearnerProfile {
   currentStreak: number;
   longestStreak: number;
   lastActiveDay: string | null;
+  streakHealth: StreakHealth;
+  /** The day the API resolved for this request, echoed back for the strip. */
+  today: string;
+  /** Seven days ending today, oldest first. */
+  recentDays: DailyActivity[];
   lessons: { lessonId: string; status: LessonStatus; bestScore: number; xpEarned: number }[];
 }

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   dailyActivity,
@@ -13,6 +13,8 @@ import {
   advanceStreak,
   gradeExercise,
   levelForXp,
+  recentDayKeys,
+  streakHealth,
   xpForExercise,
   xpForLesson,
   type Answer,
@@ -45,16 +47,40 @@ const completeSchema = z.object({
   timezone: z.string().optional(),
 });
 
-/** The caller's profile: XP, level and streak. */
+/** How many days of history the streak strip shows. */
+const STREAK_WINDOW_DAYS = 7;
+
+/**
+ * The caller's profile: XP, level, streak and recent daily activity.
+ *
+ * `localDay` comes from the client because streaks follow the learner's
+ * calendar, not the Worker's UTC clock. It falls back to UTC today so the
+ * endpoint stays useful without it.
+ */
 progressRoutes.get('/me', async (c) => {
   const db = c.get('db');
   const user = c.get('user')!;
 
-  const profile = await getOrCreateProfile(c.get('db'), user.id);
-  const lessonRows = await db
-    .select()
-    .from(lessonProgress)
-    .where(eq(lessonProgress.userId, user.id));
+  const requestedDay = c.req.query('localDay');
+  const today =
+    requestedDay && dayKeySchema.safeParse(requestedDay).success
+      ? requestedDay
+      : new Date().toISOString().slice(0, 10);
+
+  const profile = await getOrCreateProfile(db, user.id);
+
+  const window = recentDayKeys(today, STREAK_WINDOW_DAYS);
+  const windowStart = window[0]!;
+
+  const [lessonRows, activityRows] = await Promise.all([
+    db.select().from(lessonProgress).where(eq(lessonProgress.userId, user.id)),
+    db
+      .select()
+      .from(dailyActivity)
+      .where(and(eq(dailyActivity.userId, user.id), gte(dailyActivity.day, windowStart))),
+  ]);
+
+  const activityByDay = new Map(activityRows.map((row) => [row.day, row]));
 
   return c.json({
     totalXp: profile.totalXp,
@@ -62,6 +88,17 @@ progressRoutes.get('/me', async (c) => {
     currentStreak: profile.currentStreak,
     longestStreak: profile.longestStreak,
     lastActiveDay: profile.lastActiveDay,
+    streakHealth: streakHealth(toStreakState(profile), today),
+    today,
+    recentDays: window.map((day) => {
+      const activity = activityByDay.get(day);
+
+      return {
+        day,
+        xpEarned: activity?.xpEarned ?? 0,
+        lessonsCompleted: activity?.lessonsCompleted ?? 0,
+      };
+    }),
     lessons: lessonRows.map((row) => ({
       lessonId: row.lessonId,
       status: row.status,
