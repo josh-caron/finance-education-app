@@ -10,8 +10,14 @@ Cloudflare login (`npx wrangler login`). Run wrangler commands from `apps/api`.
 Once per account. The Worker has to exist before a secret can be attached to it,
 so the order matters.
 
+One Worker serves both halves: the API on `/api/*` and `/health`, and the Expo
+web export on everything else. That means one deploy, and the client and API
+share an origin.
+
+Deploy from the repo root, so the web bundle is rebuilt and checked first:
+
 ```bash
-npx wrangler deploy
+pnpm deploy:api
 ```
 
 Note the URL it prints, then set the signing secret. Generate the value with
@@ -22,10 +28,17 @@ repo and cannot be read back afterwards.
 npx wrangler secret put BETTER_AUTH_SECRET
 ```
 
-Put the printed subdomain into `BETTER_AUTH_URL` and `TRUSTED_ORIGINS` in
-`wrangler.jsonc`, then deploy again. Better Auth rejects requests whose origin is
-not trusted, so until this matches the real URL every sign-in fails with what
-looks like a broken login rather than a config error.
+Put the printed subdomain into `BETTER_AUTH_URL` in `wrangler.jsonc`, then
+deploy again.
+
+This step is not optional. Better Auth compares the request's `Origin` header
+against `BETTER_AUTH_URL` plus `TRUSTED_ORIGINS`, and a mismatch fails with
+`Invalid origin` on the sign-in form. It reads as broken auth rather than bad
+config, so it is worth recognising: if sign-in fails immediately on a fresh
+deploy, check this first.
+
+`TRUSTED_ORIGINS` only needs cross-origin callers. The web client is same-origin,
+so it is just the native app's `fineduapp://` scheme.
 
 Finally, create the schema and content in the remote database:
 
@@ -40,7 +53,19 @@ pnpm --filter @fin/api db:seed:remote
 ## Routine deploy
 
 ```bash
-npx wrangler deploy
+pnpm deploy:api
+```
+
+That rebuilds the web bundle with `--clear` and no dotenv, runs
+`scripts/check-web-bundle.mjs`, then deploys. The check exists because a warm
+Metro cache once produced a bundle that resolved `config.ts` and baked
+`http://localhost:8787` into the shipped JavaScript. Deploying that gives every
+visitor an app calling a machine they cannot reach, and it fails only at runtime.
+
+To deploy the Worker without rebuilding the client:
+
+```bash
+cd apps/api && npx wrangler deploy
 ```
 
 Migrations are deliberately not part of deploy. Apply them yourself when a

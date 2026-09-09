@@ -58,6 +58,18 @@ break a streak for anyone studying late at night in a western timezone. `advance
 treats same-day activity as a no-op, consecutive days as an extension, and any gap as a
 reset.
 
+### One Worker serves the client and the API
+
+The Expo web export is uploaded as static assets on the same Worker that serves
+the API, with `run_worker_first` claiming `/api/*` and `/health`. The client and
+API therefore share an origin, which removes CORS from the web path entirely and
+makes the session cookie first-party.
+
+It also removes a circular dependency: the web build needs no API URL, because
+`config.web.ts` defaults to an empty base and every request goes out relative.
+Only a native build needs an absolute `EXPO_PUBLIC_API_URL`, since a binary has
+no origin to fall back on.
+
 ### Auth is split by platform
 
 React Native has no cookie jar, so `@better-auth/expo` stores the session token in

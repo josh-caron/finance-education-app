@@ -18,7 +18,10 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @fin/db generate",
     "db:migrate:local": "pnpm --filter @fin/api db:migrate:local",
-    "db:seed:local": "pnpm --filter @fin/api db:seed:local"
+    "db:seed:local": "pnpm --filter @fin/api db:seed:local",
+    "build:web": "pnpm --filter @fin/mobile build:web",
+    "deploy:api": "pnpm build:web:release && pnpm --filter @fin/api deploy",
+    "build:web:release": "pnpm --filter @fin/mobile build:web:release && node scripts/check-web-bundle.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
