@@ -39,11 +39,12 @@
   // top of them, and that file points everything back at localhost, so local
   // development does not need a second copy of this config.
   //
-  // TODO: after the first deploy, replace <subdomain> with the one wrangler
-  // prints and deploy again. Better Auth signs callbacks with BETTER_AUTH_URL
-  // and rejects anything that does not match.
+  // BETTER_AUTH_URL must equal the origin the app is served from. Better Auth
+  // compares the request's Origin header against it, and a mismatch fails with
+  // "Invalid origin" on the sign-in form, which reads as broken auth rather
+  // than bad config.
   "vars": {
-    "BETTER_AUTH_URL": "https://fin-edu-api.<subdomain>.workers.dev",
+    "BETTER_AUTH_URL": "https://fin-edu-api.joshcaron.workers.dev",
     // Only cross-origin callers need listing. The web client is same-origin
     // now, so this is just the native app's scheme.
     "TRUSTED_ORIGINS": "fineduapp://",
