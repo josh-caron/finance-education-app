@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json",
     "cf-typegen": "wrangler types",
-    "seed:generate": "tsx scripts/generate-seed.ts",
     "db:migrate:local": "wrangler d1 migrations apply fin-edu-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply fin-edu-db --remote",
     "db:seed:local": "pnpm seed:generate && wrangler d1 execute fin-edu-db --local --file=./.seed/content.sql",
-    "db:seed:remote": "pnpm seed:generate && wrangler d1 execute fin-edu-db --remote --file=./.seed/content.sql"
+    "db:seed:remote": "pnpm seed:generate && wrangler d1 execute fin-edu-db --remote --file=./.seed/content.sql",
+    "deploy:worker": "wrangler deploy",
+    "dev": "wrangler dev",
+    "seed:generate": "tsx scripts/generate-seed.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json"
   },
   "dependencies": {
     "@better-auth/expo": "^1.7.3",

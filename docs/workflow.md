@@ -32,6 +32,18 @@ Before adding code, check whether it belongs in a package rather than an app:
 - A **lesson or exercise** → `@fin/content`, then `pnpm db:seed:local`.
 - Everything else → the app that uses it.
 
+## Naming npm scripts
+
+Do not name a script after a pnpm command. `pnpm <name>` runs the built-in and
+silently ignores the script, which fails in a way that has nothing to do with
+what you wrote. `setup` and `deploy` have both bitten us, which is why the
+scripts are `setup:local` and `deploy:worker`.
+
+The reserved list includes add, audit, config, dedupe, deploy, env, exec, fetch,
+import, init, install, link, list, outdated, pack, patch, prune, publish,
+rebuild, remove, root, server, setup, store, update and why. `test` and `start`
+are safe: pnpm treats those as aliases that run your script.
+
 ## Migrations
 
 Never hand-edit a generated file in `packages/db/drizzle`. Change the schema, run
