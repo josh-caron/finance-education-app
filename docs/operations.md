@@ -178,6 +178,40 @@ npx wrangler secret put BETTER_AUTH_SECRET
 Locally the same secret lives in `apps/api/.dev.vars`, written by `pnpm setup:local`.
 Each developer generates their own; there is nothing to share.
 
+## Rate limiting
+
+Counters live in the `rate_limits` table in D1, one row per caller per scope.
+D1 rather than memory because Workers spread requests across short-lived
+isolates, so an in-process counter resets unpredictably and each isolate keeps
+its own.
+
+See what is currently throttled:
+
+```bash
+npx wrangler d1 execute fin-edu-db --remote --command "SELECT key, count, expires_at FROM rate_limits ORDER BY count DESC LIMIT 20"
+```
+
+_Why you would:_ someone reports being locked out, or you want to see whether an
+endpoint is being hammered. Keys are `scope:window:ip`.
+
+Clear a specific caller, for instance to unblock a demo:
+
+```bash
+npx wrangler d1 execute fin-edu-db --remote --command "DELETE FROM rate_limits WHERE key LIKE '%:1.2.3.4'"
+```
+
+Limits are in `packages/core/src/rate-limit.ts`. Changing a window changes the
+key, so old counts are not inherited and a change takes effect immediately.
+
+Elapsed windows are cleared by a daily cron. Active keys are reset in place, so
+the cron only removes keys seen once and never again. Trigger it by hand:
+
+```bash
+npx wrangler dev --test-scheduled
+```
+
+then `curl "http://localhost:8787/__scheduled"`.
+
 ## The API
 
 The whole surface is curl-able. Sign in, keeping the session cookie:

@@ -50,10 +50,15 @@ Never hand-edit a generated file in `packages/db/drizzle`. Change the schema, ru
 `pnpm db:generate`, and commit the generated SQL with the schema change in the same commit.
 Applying a migration to the deployed database is a deliberate step, not part of deploy.
 
-Data backfills are the exception: drizzle-kit only generates structural changes, so a
-backfill goes in its own hand-written file with the next number and a comment saying why.
-Wrangler applies every file in the folder in order; drizzle-kit ignores files it did not
-create, so `pnpm db:generate` leaves them alone.
+Do not hand-write anything into `packages/db/drizzle`. drizzle-kit numbers new
+migrations from its own journal, which cannot see files it did not create, so a
+hand-written `0002_*.sql` collides the next time someone runs `db:generate`. That
+happened once already.
+
+One-off data repairs go in `packages/db/data/` instead, named by date, and are applied
+with `wrangler d1 execute --file=`. They are not part of the schema lineage: a database
+created after the structural migration usually does not need them, and
+`packages/db/data/2026-09-08-backfill-completions.sql` says so in its header.
 
 ## Meetings
 

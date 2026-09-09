@@ -1,0 +1,18 @@
+-- One-time data repair. Already applied to local and remote on 2026-09-08.
+--
+-- Not a migration, and deliberately outside drizzle/: drizzle-kit numbers new
+-- migrations from its own journal, which does not see hand-written files, so
+-- anything added there eventually collides on a filename.
+--
+-- Migration 0001 added lesson_progress.completions defaulting to 0. Rows that
+-- were already marked completed represented one completion, and left at 0 their
+-- next replay would be stamped as run 1, joining the original run: scored
+-- against the first pass and reporting XP it had not awarded.
+--
+-- A database created after 0001 does not need this. There are no completed rows
+-- predating the column, and the API maintains completions from the start.
+--
+-- Applied with:
+--   wrangler d1 execute fin-edu-db --local  --file=../../packages/db/data/2026-09-08-backfill-completions.sql
+--   wrangler d1 execute fin-edu-db --remote --file=../../packages/db/data/2026-09-08-backfill-completions.sql
+UPDATE lesson_progress SET completions = 1 WHERE status = 'completed' AND completions = 0;
