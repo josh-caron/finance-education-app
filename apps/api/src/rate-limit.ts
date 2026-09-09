@@ -30,23 +30,35 @@ export async function consumeRateLimit(
 ): Promise<RateLimitDecision> {
   const windowEnd = now + rule.window;
 
-  const [row] = await db
-    .insert(rateLimits)
-    .values({ key, count: 1, expiresAt: windowEnd })
-    .onConflictDoUpdate({
-      target: rateLimits.key,
-      set: {
-        count: sql`case when ${rateLimits.expiresAt} <= ${now} then 1 else ${rateLimits.count} + 1 end`,
-        expiresAt: sql`case when ${rateLimits.expiresAt} <= ${now} then ${windowEnd} else ${rateLimits.expiresAt} end`,
-      },
-    })
-    .returning({ count: rateLimits.count, expiresAt: rateLimits.expiresAt });
+  try {
+    const [row] = await db
+      .insert(rateLimits)
+      .values({ key, count: 1, expiresAt: windowEnd })
+      .onConflictDoUpdate({
+        target: rateLimits.key,
+        set: {
+          count: sql`case when ${rateLimits.expiresAt} <= ${now} then 1 else ${rateLimits.count} + 1 end`,
+          expiresAt: sql`case when ${rateLimits.expiresAt} <= ${now} then ${windowEnd} else ${rateLimits.expiresAt} end`,
+        },
+      })
+      .returning({ count: rateLimits.count, expiresAt: rateLimits.expiresAt });
 
-  // A missing row would mean the upsert returned nothing, which should not
-  // happen. Fail open rather than locking everyone out over a storage quirk.
-  if (!row) return { allowed: true, remaining: rule.max - 1, retryAfter: rule.window };
+    // Nothing returned should be impossible for an upsert, but treat it the
+    // same as a storage failure rather than guessing at a count.
+    if (!row) throw new Error('Rate limit upsert returned no row');
 
-  return decideRateLimit(row.count, row.expiresAt, now, rule);
+    return decideRateLimit(row.count, row.expiresAt, now, rule);
+  } catch (error) {
+    // Fail open. The limiter protects against abuse; it must not become the
+    // thing that takes the API down. The most likely cause is the rate_limits
+    // table being absent because a deploy landed before its migration, and
+    // rejecting every request over that would be a worse outcome than serving
+    // them unthrottled. Anything that breaks D1 outright breaks every route
+    // anyway, so this gives an attacker nothing they did not already have.
+    console.error('Rate limit storage unavailable, allowing request', { key, error });
+
+    return { allowed: true, remaining: rule.max - 1, retryAfter: rule.window };
+  }
 }
 
 /**
@@ -94,5 +106,10 @@ export const rateLimit = createMiddleware<AppEnv>(async (c, next) => {
  * seen once and never again.
  */
 export async function pruneRateLimits(db: Database, now = Math.floor(Date.now() / 1000)) {
-  await db.delete(rateLimits).where(lt(rateLimits.expiresAt, now));
+  try {
+    await db.delete(rateLimits).where(lt(rateLimits.expiresAt, now));
+  } catch (error) {
+    // A failed cleanup is not worth a failed cron run; the table only grows.
+    console.error('Rate limit prune failed', error);
+  }
 }
