@@ -6,6 +6,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
 
+  // Clears elapsed rate-limit windows once a day. Active keys are reset in
+  // place by the limiter, so this only removes keys seen once and never again.
+  "triggers": {
+    "crons": ["17 4 * * *"],
+  },
+
   // Pinned so a token with access to more than one account cannot deploy this
   // somewhere unintended.
   "account_id": "49eb1c70d2cacb99fe5701d8becf3d4a",

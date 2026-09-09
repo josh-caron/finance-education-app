@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
-import { withSession } from './middleware/session';
+import { withDb, withSession } from './middleware/session';
+import { pruneRateLimits, rateLimit } from './rate-limit';
 import { contentRoutes } from './routes/content';
 import { leaderboardRoutes } from './routes/leaderboard';
 import { progressRoutes } from './routes/progress';
-import type { AppEnv } from './types';
+import type { AppEnv, Bindings } from './types';
 
 const app = new Hono<AppEnv>();
 
@@ -23,6 +24,10 @@ app.use('*', (c, next) =>
   })(c, next),
 );
 
+// Storage first, then the limit, then auth. A flood is rejected before any
+// session lookup or password hashing happens.
+app.use('*', withDb);
+app.use('*', rateLimit);
 app.use('*', withSession);
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
@@ -41,4 +46,16 @@ app.onError((error, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+
+  /**
+   * Clears rate-limit windows that have already elapsed. Active keys are reset
+   * in place by the limiter itself, so this only removes keys seen once and
+   * never again. Scheduled daily in wrangler.jsonc.
+   */
+  async scheduled(_event: ScheduledController, env: Bindings) {
+    const { createDb } = await import('@fin/db');
+    await pruneRateLimits(createDb(env.DB));
+  },
+} satisfies ExportedHandler<Bindings>;

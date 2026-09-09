@@ -77,6 +77,26 @@ React Native has no cookie jar, so `@better-auth/expo` stores the session token 
 `src/lib/auth-client.web.ts` drops the plugin and lets the browser handle the cookie.
 Metro picks the right file by extension. The two files must export the same names.
 
+### Rate limiting is a single SQL statement
+
+Counters are kept in D1 and advanced by one
+`INSERT .. ON CONFLICT DO UPDATE .. RETURNING`. Doing it in one statement is the
+whole point: a read followed by a write lets two concurrent requests observe the
+same count and both pass. Verified with 80 requests at 40-way concurrency
+against a limit of 60, which lets exactly 60 through.
+
+Better Auth ships a rate limiter, but its default storage is a module-level Map.
+Workers recycle isolates and spread requests across them, so that counter resets
+unpredictably and each isolate keeps its own. It would look like rate limiting
+without being it.
+
+The limiter runs before the session middleware, so a flood is rejected without a
+session lookup or a password hash. That is also why building the database client
+is its own middleware: the limiter needs storage before any auth work happens.
+
+Windows are fixed rather than sliding, and the window length is part of the
+storage key, so changing a limit cannot inherit a count from the old rule.
+
 ### One D1 batch instead of a transaction
 
 D1 has no interactive transactions. Lesson completion writes the profile, the lesson row
