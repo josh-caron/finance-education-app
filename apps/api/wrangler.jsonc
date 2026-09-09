@@ -20,17 +20,34 @@
     },
   ],
 
+  // The Expo web export is served by this same Worker, so the client and the
+  // API share an origin: no CORS, and a first-party session cookie.
+  //
+  // Requests are matched against the built files first; anything the Worker
+  // must own is listed in run_worker_first. Build the bundle before deploying
+  // (`pnpm deploy:api` does both).
+  "assets": {
+    "directory": "../mobile/dist",
+    "run_worker_first": ["/api/*", "/health"],
+    // The Expo export writes a real page per route, so a miss is a genuine 404
+    // rather than a client-routed path.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+  },
+
   // These are the deployed values. `wrangler dev` reads apps/api/.dev.vars on
   // top of them, and that file points everything back at localhost, so local
   // development does not need a second copy of this config.
   //
-  // TODO: after the first deploy, replace <subdomain> with the one wrangler
-  // prints and deploy again, or Better Auth will reject its own callbacks.
+  // BETTER_AUTH_URL must equal the origin the app is served from. Better Auth
+  // compares the request's Origin header against it, and a mismatch fails with
+  // "Invalid origin" on the sign-in form, which reads as broken auth rather
+  // than bad config.
   "vars": {
-    "BETTER_AUTH_URL": "https://fin-edu-api.<subdomain>.workers.dev",
-    // Origins allowed to send credentialed requests: the deployed web client
-    // and the native app's scheme.
-    "TRUSTED_ORIGINS": "https://fin-edu-api.<subdomain>.workers.dev,fineduapp://",
+    "BETTER_AUTH_URL": "https://fin-edu-api.joshcaron.workers.dev",
+    // Only cross-origin callers need listing. The web client is same-origin
+    // now, so this is just the native app's scheme.
+    "TRUSTED_ORIGINS": "fineduapp://",
   },
 
   // BETTER_AUTH_SECRET is a secret, never a var:
