@@ -40,6 +40,22 @@ docs/
 `packages/core` is the spine: the client and the API import the same grading and XP rules,
 so a score can never mean two different things on the two sides.
 
+## Learning content sources
+
+The **Money Basics: Budgeting and Saving** module uses the following Consumer
+Financial Protection Bureau (CFPB) resources for its background concepts:
+
+- [Budgeting for needs and wants](https://www.consumerfinance.gov/consumer-tools/educator-tools/youth-financial-education/teach/activities/budgeting-needs-and-wants/): distinguishing needs from wants and practicing spending choices. Supports the **Needs and Wants** lesson.
+- [Your Money, Your Goals toolkit](https://www.consumerfinance.gov/consumer-tools/educator-tools/your-money-your-goals/toolkit/): income and spending trackers, bill calendars, cash-flow budgets, goal setting, and savings plans. Supports **Income and Expenses**, **Build a Budget**, and **Set a Savings Goal**.
+
+Accessed September 13, 2026. The lesson scenarios, dollar amounts, questions, and
+answer explanations are original educational examples, not quotations from the
+CFPB. Savings calculations assume no interest, fees, or withdrawals, as stated in
+the exercises. These references support this module; they are not a source audit
+of the separate starter lessons on compounding and credit utilization.
+
+See [the module notes](docs/budgeting-saving-module.md) for scope and review steps.
+
 ## Getting started
 
 Requires **Node 22+** (Wrangler will not run on older versions) and pnpm 10.

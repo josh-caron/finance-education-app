@@ -89,9 +89,21 @@ function round(value: number, places: number): number {
  * Learners type things like "$1,234.56" or "7%". Normalize before grading so a
  * correct number is not marked wrong over formatting.
  */
-export function parseNumericAnswer(input: string): number | null {
-  const cleaned = input.replace(/[$,%\s,]/g, '');
-  if (cleaned === '' || cleaned === '-' || cleaned === '.') return null;
+export function parseNumericAnswer(
+  input: string,
+  format?: ComputedAnswerExercise['format'],
+): number | null {
+  // Accept decimal notation and correctly grouped US thousands separators.
+  // Validate before removing formatting: "1,2" and "1 2" must not become 12.
+  const text = input.trim();
+  if (format && format !== 'usd' && text.includes('$')) return null;
+  if (format && format !== 'percent' && text.includes('%')) return null;
+  if (!/^[+-]?\$?(?:\d{1,3}(?:,\d{3})+|\d+|(?=\.\d))(?:\.\d+)?%?$/.test(text)) {
+    return null;
+  }
+  // Currency and percent together have ambiguous units.
+  if (text.includes('$') && text.endsWith('%')) return null;
+  const cleaned = text.replace(/[$,%]/g, '');
 
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : null;
