@@ -1,6 +1,7 @@
 node_modules
 dist
 .expo
+apps/mobile/expo-env.d.ts
 .wrangler
 pnpm-lock.yaml
 packages/db/drizzle

@@ -18,22 +18,27 @@ export default function SignInScreen() {
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
   async function handleSubmit() {
+    if (submitting || !canSubmit) return;
     setSubmitting(true);
     setError(null);
 
-    const { error: signInError } = await signIn.email({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error: signInError } = await signIn.email({
+        email: email.trim(),
+        password,
+      });
 
-    setSubmitting(false);
+      if (signInError) {
+        setError(signInError.message ?? 'Could not sign in. Check your email and password.');
+        return;
+      }
 
-    if (signInError) {
-      setError(signInError.message ?? 'Could not sign in. Check your email and password.');
-      return;
+      router.replace('/(tabs)/learn');
+    } catch {
+      setError('Could not connect to the server. Check your connection and try again.');
+    } finally {
+      setSubmitting(false);
     }
-
-    router.replace('/(tabs)/learn');
   }
 
   return (
