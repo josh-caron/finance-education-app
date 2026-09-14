@@ -1,6 +1,7 @@
 import { toDayKey } from '@fin/core';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -17,6 +18,8 @@ import { signOut, useSession } from '@/lib/auth-client';
 
 export default function ProfileScreen() {
   const { data: session } = useSession();
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   // Streaks follow the learner's calendar, so the local day goes to the API.
   const localDay = toDayKey(new Date());
@@ -27,8 +30,21 @@ export default function ProfileScreen() {
   });
 
   async function handleSignOut() {
-    await signOut();
-    router.replace('/(auth)/sign-in');
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError(null);
+    try {
+      const result = await signOut();
+      if (result.error) {
+        setSignOutError(result.error.message ?? 'Could not sign out. Please try again.');
+        return;
+      }
+      router.replace('/(auth)/sign-in');
+    } catch {
+      setSignOutError('Could not connect to the server. Please try signing out again.');
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   const profile = profileQuery.data;
@@ -83,7 +99,12 @@ export default function ProfileScreen() {
         </>
       ) : null}
 
-      <Button label="Sign out" variant="secondary" onPress={handleSignOut} />
+      {signOutError ? (
+        <ThemedText type="small" themeColor="danger">
+          {signOutError}
+        </ThemedText>
+      ) : null}
+      <Button label="Sign out" variant="secondary" onPress={handleSignOut} loading={signingOut} />
     </Screen>
   );
 }

@@ -9,6 +9,7 @@ import { API_URL } from './config';
  */
 export const authClient = createAuthClient({
   baseURL: API_URL,
+  fetchOptions: { timeout: 10_000 },
 });
 
 /** The browser attaches the session cookie itself; nothing to add by hand. */

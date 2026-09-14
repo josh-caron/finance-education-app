@@ -130,14 +130,42 @@ attempt log.
 | GET    | `/api/progress/me`                         | required | XP, level, streak, lesson statuses     |
 | POST   | `/api/progress/lessons/:lessonId/attempts` | required | Grade one submission                   |
 | POST   | `/api/progress/lessons/:lessonId/complete` | required | Award XP, advance streak               |
-| GET    | `/api/leaderboard`                         | required | Not implemented (backlog 8)            |
+| GET    | `/api/leaderboard?period=all-time\|weekly` | required | Top 10 and ranks around the caller     |
+
+## Leaderboard (backlog 8, Gustavo)
+
+Signed-in learners can compare display names and XP globally. The response contains
+no emails or account IDs. Only learners with positive XP in the selected period are
+ranked; an unranked caller gets `currentUser: null`. Friends-only rankings and an
+opt-out preference are not implemented in this first version.
+
+All-time scores come from `learner_profiles.total_xp`. Weekly scores sum
+`daily_activity.xp_earned` in a Monday-inclusive, next-Monday-exclusive date window.
+The server selects the week using UTC; activity uses each learner's existing local
+date labels. This is a calendar-date comparison, not a precise UTC timestamp window.
+The UI states the convention. No data is deleted when the displayed week changes.
+
+SQLite window functions rank the full population before selecting the first ten
+rows and up to two rows on either side of the caller. Equal XP earns equal ranks
+(1, 1, 3); user ID breaks ties only for stable display order, including ties at the
+top-ten cutoff. The response contains at most 15 rows, without duplicates between
+the top list and the nearby list. Requests default to `all-time`; other period
+values receive 400 and unauthenticated requests receive 401. Responses are private
+and not cacheable.
+
+The client refreshes on tab focus, every minute, and on manual refresh. Its query
+cache is scoped to the signed-in user and period. Loading, retry, empty and
+unranked states are included. No migration or reseeding is required.
+
+`pnpm --filter @fin/api test` runs SQLite-backed ranking tests with Node's built-in
+test runner. They cover ties, zero XP, nearby ranks, absent callers, bound parameters,
+weekly aggregation, week boundaries, and date rollover. Before merging, verify
+both tabs and a completed lesson's XP update on web and a native device.
 
 ## Not built yet
 
 Tracked against the pitch backlog:
 
-- **Leaderboard (8, Gustavo)**. API route and screen are stubbed. The data is already
-  there; it is a query, not a schema change.
 - **XP/streak UI (5, Josh)**. The rules and the API are done; the profile screen shows a
   plain progress bar where the real treatment goes.
 - **Email verification and password reset**. Needs an email provider, so sign-up

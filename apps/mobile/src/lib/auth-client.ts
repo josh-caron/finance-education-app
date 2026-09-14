@@ -13,6 +13,7 @@ import { API_URL, APP_SCHEME } from './config';
  */
 export const authClient = createAuthClient({
   baseURL: API_URL,
+  fetchOptions: { timeout: 10_000 },
   plugins: [
     expoClient({
       scheme: APP_SCHEME,
