@@ -88,6 +88,50 @@ describe('gradeExercise', () => {
 });
 
 describe('parseNumericAnswer', () => {
+  it('only accepts symbols matching the requested units', () => {
+    expect(parseNumericAnswer('$80', 'usd')).toBe(80);
+    expect(parseNumericAnswer('7%', 'percent')).toBe(7);
+    expect(parseNumericAnswer('7%', 'usd')).toBeNull();
+    expect(parseNumericAnswer('$7', 'percent')).toBeNull();
+    expect(parseNumericAnswer('7%', 'years')).toBeNull();
+    expect(parseNumericAnswer('$7', 'number')).toBeNull();
+  });
+  it.each([
+    ['1,234.56', 1234.56],
+    ['$1,234.56', 1234.56],
+    ['-12.5', -12.5],
+    ['-$12.50', -12.5],
+    ['.5', 0.5],
+    ['0', 0],
+    [' 7% ', 7],
+    ['1,000,000', 1000000],
+  ])('parses supported decimal input %s', (input, expected) => {
+    expect(parseNumericAnswer(input)).toBe(expected);
+  });
+
+  it.each([
+    '1,2',
+    '12,34',
+    '1 2',
+    '1,234,56',
+    '1.2.3',
+    '$$12',
+    '12$34',
+    '1%2',
+    '$7%',
+    '0x10',
+    '1e3',
+    'Infinity',
+    'NaN',
+    '2 years',
+    '.',
+    '-',
+    '   ',
+    '12.',
+  ])('rejects malformed or unsupported input %s', (input) => {
+    expect(parseNumericAnswer(input)).toBeNull();
+  });
+
   it('strips currency, percent and separator formatting', () => {
     expect(parseNumericAnswer('$1,050.00')).toBe(1050);
     expect(parseNumericAnswer('7%')).toBe(7);

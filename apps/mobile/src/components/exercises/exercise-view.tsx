@@ -45,7 +45,8 @@ export function toAnswer(exercise: PublicExercise, draft: Draft): Answer | null 
     }
 
     case 'computed_answer': {
-      const value = parseNumericAnswer(draft.text);
+      if (exercise.kind !== 'computed_answer') return null;
+      const value = parseNumericAnswer(draft.text, exercise.format);
       return value === null ? null : { kind: 'computed_answer', value };
     }
   }
@@ -88,6 +89,7 @@ export function ExerciseView({
 
       {exercise.kind === 'computed_answer' && draft.kind === 'computed_answer' ? (
         <ComputedAnswer
+          key={exercise.id}
           exercise={exercise}
           value={draft.text}
           onChange={(text) => onChange({ kind: 'computed_answer', text })}
