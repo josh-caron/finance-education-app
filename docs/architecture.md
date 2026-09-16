@@ -47,6 +47,13 @@ to SQL, which Wrangler applies to D1. Two things follow: content changes are cod
 like code, and computed answers are derived with the same `@fin/core` finance helpers the
 lesson is teaching, so an exercise and its answer key cannot drift apart.
 
+Seeding upserts content by id rather than replacing it. Attempts and lesson progress
+reference lessons and exercises with `ON DELETE CASCADE`, so a delete-and-reinsert seed
+wiped every learner's history on each content update while leaving their total XP, which
+would have let everyone earn it again. The corollary is that ids are permanent: renaming
+one looks like a removal plus an addition, and removed content does take its progress
+with it. `apps/api/src/seed-sql.ts` explains the reordering detail.
+
 Exercise rows keep the whole exercise as a JSON `payload` column rather than one table per
 kind. Adding an exercise type is then a change to `@fin/core`'s union and the UI, with no
 migration.
