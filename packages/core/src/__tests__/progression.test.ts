@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceStreak,
   firstTryRate,
+  isPlausibleLocalDay,
   isStreakActive,
   lessonCompletionBonus,
   levelForXp,
@@ -188,5 +189,44 @@ describe('weekdayLabel', () => {
       'F',
       'S',
     ]);
+  });
+});
+
+describe('isPlausibleLocalDay', () => {
+  const noonUtc = new Date('2026-09-16T12:00:00Z');
+
+  it('accepts the UTC date and one day either side', () => {
+    expect(isPlausibleLocalDay('2026-09-15', noonUtc)).toBe(true);
+    expect(isPlausibleLocalDay('2026-09-16', noonUtc)).toBe(true);
+    expect(isPlausibleLocalDay('2026-09-17', noonUtc)).toBe(true);
+  });
+
+  it('rejects days no timezone could be on', () => {
+    expect(isPlausibleLocalDay('2026-09-14', noonUtc)).toBe(false);
+    expect(isPlausibleLocalDay('2026-09-18', noonUtc)).toBe(false);
+    expect(isPlausibleLocalDay('2030-01-01', noonUtc)).toBe(false);
+  });
+
+  it('rejects impossible calendar dates', () => {
+    const feb = new Date('2026-03-01T00:00:00Z');
+    expect(isPlausibleLocalDay('2026-02-29', feb)).toBe(false);
+    expect(isPlausibleLocalDay('2026-02-30', feb)).toBe(false);
+    expect(isPlausibleLocalDay('2026-13-01', noonUtc)).toBe(false);
+  });
+
+  it('accepts a real leap day', () => {
+    expect(isPlausibleLocalDay('2028-02-29', new Date('2028-02-29T06:00:00Z'))).toBe(true);
+  });
+
+  it('rejects anything not shaped like YYYY-MM-DD', () => {
+    expect(isPlausibleLocalDay('16/09/2026', noonUtc)).toBe(false);
+    expect(isPlausibleLocalDay('2026-9-16', noonUtc)).toBe(false);
+    expect(isPlausibleLocalDay('', noonUtc)).toBe(false);
+  });
+
+  it('handles a year boundary', () => {
+    const newYear = new Date('2027-01-01T03:00:00Z');
+    expect(isPlausibleLocalDay('2026-12-31', newYear)).toBe(true);
+    expect(isPlausibleLocalDay('2027-01-02', newYear)).toBe(true);
   });
 });

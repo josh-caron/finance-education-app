@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getPlatformProxy } from 'wrangler';
 
 import worker from '../src/index';
@@ -134,6 +135,22 @@ export async function createHarness() {
 }
 
 export type Harness = Awaited<ReturnType<typeof createHarness>>;
+
+/**
+ * Pins the server's clock to midday UTC on `day`.
+ *
+ * The API only accepts a learner's local day within one day of the server's
+ * UTC date, so tests that submit fixed dates have to move the clock with them.
+ * Only Date is faked: timers stay real, so the D1 proxy connection is unaffected.
+ */
+export function setToday(day: string) {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(`${day}T12:00:00Z`));
+}
+
+export function restoreClock() {
+  vi.useRealTimers();
+}
 
 interface RequestOptions {
   method?: string;

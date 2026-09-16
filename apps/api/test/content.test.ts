@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { createHarness, type Harness } from './harness';
+import { createHarness, restoreClock, setToday, type Harness } from './harness';
 
 const DAY = '2026-09-14';
 
@@ -26,7 +26,12 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  setToday(DAY);
   await h.resetRateLimits();
+});
+
+afterEach(() => {
+  restoreClock();
 });
 
 describe('GET /api/content/units', () => {

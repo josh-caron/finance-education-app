@@ -65,6 +65,10 @@ break a streak for anyone studying late at night in a western timezone. `advance
 treats same-day activity as a no-op, consecutive days as an extension, and any gap as a
 reset.
 
+Because the day comes from the client, the API only accepts a real calendar date within
+one day of its own UTC date, which covers every timezone. Without that, a learner could
+replay one lesson with consecutive future dates and build any streak they liked.
+
 ### One Worker serves the client and the API
 
 The Expo web export is uploaded as static assets on the same Worker that serves

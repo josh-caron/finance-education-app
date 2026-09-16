@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
@@ -22,6 +23,16 @@ app.use('*', (c, next) =>
     exposeHeaders: ['set-auth-token'],
     credentials: true,
   })(c, next),
+);
+
+// Every API body is a few hundred bytes of JSON. Reject anything far larger
+// before it reaches storage, auth or a JSON parser.
+app.use(
+  '/api/*',
+  bodyLimit({
+    maxSize: 16 * 1024,
+    onError: (c) => c.json({ error: 'Request body too large' }, 413),
+  }),
 );
 
 // Storage first, then the limit, then auth. A flood is rejected before any

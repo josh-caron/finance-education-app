@@ -1,7 +1,14 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { correctAnswers } from './fixtures';
-import { createHarness, type AttemptBody, type CompletionBody, type Harness } from './harness';
+import {
+  createHarness,
+  restoreClock,
+  setToday,
+  type AttemptBody,
+  type CompletionBody,
+  type Harness,
+} from './harness';
 
 const DAY1 = '2026-09-14';
 const DAY2 = '2026-09-15';
@@ -31,7 +38,12 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  setToday(DAY1);
   await h.resetRateLimits();
+});
+
+afterEach(() => {
+  restoreClock();
 });
 
 const json = async <T>(response: Response) => (await response.json()) as T;
@@ -182,6 +194,120 @@ describe('POST /api/progress/lessons/:lessonId/attempts', () => {
   });
 });
 
+describe('input limits', () => {
+  it('rejects oversized ids and ordering answers', async () => {
+    const cookie = await h.signUp();
+    const countAttempts = async () =>
+      (await h.db.prepare('SELECT count(*) AS n FROM exercise_attempts').first<{ n: number }>())!.n;
+    const before = await countAttempts();
+    const post = (body: unknown) =>
+      h.request('/api/progress/lessons/basics.one/attempts', { method: 'POST', cookie, body });
+    const long = 'x'.repeat(201);
+
+    expect(
+      (await post({ exerciseId: long, answer: choice.answer, localDay: DAY1 })).status,
+      'exerciseId',
+    ).toBe(400);
+    expect(
+      (
+        await post({
+          exerciseId: choice.exerciseId,
+          answer: { kind: 'multiple_choice', choiceId: long },
+          localDay: DAY1,
+        })
+      ).status,
+      'choiceId',
+    ).toBe(400);
+    expect(
+      (
+        await post({
+          exerciseId: order.exerciseId,
+          answer: { kind: 'ordering', order: Array.from({ length: 51 }, (_, i) => `item-${i}`) },
+          localDay: DAY1,
+        })
+      ).status,
+      'ordering items',
+    ).toBe(400);
+
+    // The shared test database already holds other tests' attempts.
+    expect(await countAttempts()).toBe(before);
+  });
+
+  it('rejects a request body over 16 KB before it reaches the database', async () => {
+    const cookie = await h.signUp();
+
+    const response = await h.request('/api/progress/lessons/basics.one/attempts', {
+      method: 'POST',
+      cookie,
+      body: { ...choice, localDay: DAY1, padding: 'x'.repeat(20 * 1024) },
+    });
+
+    expect(response.status).toBe(413);
+  });
+
+  it('still accepts the largest legitimate answers', async () => {
+    const cookie = await h.signUp();
+    const response = await h.attempt(
+      cookie,
+      'basics.one',
+      {
+        exerciseId: order.exerciseId,
+        answer: {
+          kind: 'ordering',
+          order: Array.from({ length: 50 }, (_, i) => 'x'.repeat(200) + i).map((s) =>
+            s.slice(0, 200),
+          ),
+        },
+      },
+      DAY1,
+    );
+    expect(response.status).toBe(200);
+  });
+});
+
+describe('local day', () => {
+  it('rejects a day no timezone could be on', async () => {
+    const cookie = await h.signUp();
+
+    const twoDaysAhead = await h.attempt(cookie, 'basics.one', choice, DAY3);
+    const impossible = await h.attempt(cookie, 'basics.one', choice, '2026-02-30');
+
+    expect(twoDaysAhead.status).toBe(400);
+    expect(impossible.status).toBe(400);
+  });
+
+  it('accepts a day one either side of UTC, for learners far east or west', async () => {
+    const cookie = await h.signUp();
+
+    expect((await h.attempt(cookie, 'basics.one', choice, DAY2)).status).toBe(200);
+    expect((await h.attempt(cookie, 'basics.one', calc, '2026-09-13')).status).toBe(200);
+  });
+
+  it('cannot build a streak by replaying with future days', async () => {
+    const cookie = await h.signUp();
+    await h.answerAll(cookie, 'basics.one', DAY1);
+    await h.complete(cookie, 'basics.one', DAY1);
+
+    const statuses = [];
+    for (const day of ['2026-09-16', '2026-09-17', '2026-09-18']) {
+      await h.answerAll(cookie, 'basics.one', DAY1);
+      statuses.push((await h.complete(cookie, 'basics.one', day)).status);
+    }
+
+    expect(statuses).toEqual([400, 400, 400]);
+    expect((await me(cookie)).currentStreak).toBe(1);
+  });
+
+  it('falls back to the server day when /me is asked about an implausible day', async () => {
+    const cookie = await h.signUp();
+    const response = await h.request('/api/progress/me?localDay=2031-01-01', { cookie });
+
+    expect(response.status).toBe(200);
+    const body = await json<MeBody & { today: string }>(response);
+    expect(body.today).toBe(DAY1);
+  });
+});
+
 describe('POST /api/progress/lessons/:lessonId/complete', () => {
   it('refuses to complete a lesson until every exercise is answered correctly', async () => {
     const cookie = await h.signUp();
@@ -306,13 +432,16 @@ describe('streaks', () => {
 
     await h.answerAll(cookie, 'basics.one', DAY1);
     const day1 = await json<CompletionBody>(await h.complete(cookie, 'basics.one', DAY1));
+    setToday(DAY2);
     await h.answerAll(cookie, 'basics.two', DAY2);
     const day2 = await json<CompletionBody>(await h.complete(cookie, 'basics.two', DAY2));
 
     expect(day1.currentStreak).toBe(1);
     expect(day2).toMatchObject({ currentStreak: 2, longestStreak: 2 });
     expect((await me(cookie, DAY2)).streakHealth).toBe('active');
+    setToday(DAY3);
     expect((await me(cookie, DAY3)).streakHealth).toBe('at_risk');
+    setToday(DAY4);
     expect((await me(cookie, DAY4)).streakHealth).toBe('broken');
   });
 

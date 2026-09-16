@@ -138,6 +138,26 @@ export function dayDifference(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / MS_PER_DAY);
 }
 
+/**
+ * Whether `day` could be today somewhere on Earth at `now`.
+ *
+ * The client reports its own local day so streaks follow the learner's
+ * calendar, which makes the value client-controlled. Every timezone is within
+ * one calendar day of UTC, so anything further away is not a real local date
+ * and would let a learner build a streak by labelling replays with consecutive
+ * future days.
+ */
+export function isPlausibleLocalDay(day: string, now: Date): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+
+  // Reject dates like 2026-02-30 that parse by rolling into the next month.
+  const parsed = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) return false;
+
+  const utcToday = now.toISOString().slice(0, 10);
+  return Math.abs(dayDifference(utcToday, day)) <= 1;
+}
+
 /** Today as YYYY-MM-DD. Pass the client's date so streaks follow the learner's calendar. */
 export function toDayKey(date: Date): string {
   const year = date.getFullYear();
