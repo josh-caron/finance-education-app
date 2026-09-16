@@ -47,7 +47,6 @@ const submitSchema = z.object({
 
 const completeSchema = z.object({
   localDay: dayKeySchema,
-  timezone: z.string().optional(),
 });
 
 /** How many days of history the streak strip shows. */
@@ -327,7 +326,6 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
         currentStreak: streak.currentStreak,
         longestStreak: streak.longestStreak,
         lastActiveDay: streak.lastActiveDay,
-        timezone: parsed.data.timezone ?? profile.timezone,
         updatedAt: now,
       })
       .where(eq(learnerProfiles.userId, user.id)),

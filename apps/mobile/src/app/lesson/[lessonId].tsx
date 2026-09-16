@@ -69,7 +69,6 @@ export default function LessonScreen() {
     mutationFn: () =>
       apiPost<LessonCompletion>(`/api/progress/lessons/${lessonId}/complete`, {
         localDay: toDayKey(new Date()),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     onSuccess: (data) => {
       levelBefore.current = levelFromXp(data.totalXp - data.bonus);

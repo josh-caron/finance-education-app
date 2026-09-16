@@ -193,6 +193,19 @@ describe('POST /api/progress/lessons/:lessonId/complete', () => {
     expect(await response.json()).toMatchObject({ answered: 1 });
   });
 
+  it('still accepts a timezone from an older client, and ignores it', async () => {
+    const cookie = await h.signUp();
+    await h.answerAll(cookie, 'basics.one', DAY1);
+
+    const response = await h.request('/api/progress/lessons/basics.one/complete', {
+      method: 'POST',
+      cookie,
+      body: { localDay: DAY1, timezone: 'America/New_York' },
+    });
+
+    expect(response.status).toBe(200);
+  });
+
   it('returns 404 for an unknown lesson and 400 for a bad day', async () => {
     const cookie = await h.signUp();
     expect((await h.complete(cookie, 'nope', DAY1)).status).toBe(404);
