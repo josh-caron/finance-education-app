@@ -113,7 +113,7 @@ and the daily rollup through `db.batch()`, so they cannot land partially.
 
 ```
 user ──< session, account            (Better Auth)
-user ──  learner_profiles            XP, streak, timezone
+user ──  learner_profiles            XP, streak
 user ──< lesson_progress             per-lesson status and best score
 user ──< exercise_attempts           append-only submission log
 user ──< daily_activity              per-day rollup for streaks and the weekly board
@@ -132,7 +132,6 @@ attempt log.
 | GET    | `/health`                                  | none     | Liveness                               |
 | \*     | `/api/auth/*`                              | none     | Better Auth (sign up/in/out)           |
 | GET    | `/api/content/units`                       | optional | Skill tree, with progress if signed in |
-| GET    | `/api/content/units/:unitId/lessons`       | optional | Lesson list for one unit               |
 | GET    | `/api/content/lessons/:lessonId`           | optional | Lesson with answer keys stripped       |
 | GET    | `/api/progress/me`                         | required | XP, level, streak, lesson statuses     |
 | POST   | `/api/progress/lessons/:lessonId/attempts` | required | Grade one submission                   |

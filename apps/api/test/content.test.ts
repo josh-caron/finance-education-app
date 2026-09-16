@@ -112,3 +112,10 @@ describe('GET /api/content/lessons/:lessonId', () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe('removed endpoints', () => {
+  it('no longer serves the per-unit lesson list', async () => {
+    const response = await h.request('/api/content/units/basics/lessons');
+    expect(response.status).toBe(404);
+  });
+});
