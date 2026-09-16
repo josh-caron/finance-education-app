@@ -100,17 +100,3 @@ contentRoutes.get('/lessons/:lessonId', async (c) => {
     exercises: exerciseRows.map((row) => toPublicExercise(row.payload)),
   });
 });
-
-/** Lesson ids for a set of units, used by the client to prefetch a unit. */
-contentRoutes.get('/units/:unitId/lessons', async (c) => {
-  const db = c.get('db');
-  const unitId = c.req.param('unitId');
-
-  const rows = await db
-    .select({ id: lessons.id, title: lessons.title, order: lessons.sortOrder })
-    .from(lessons)
-    .where(eq(lessons.unitId, unitId))
-    .orderBy(asc(lessons.sortOrder));
-
-  return c.json({ lessons: rows });
-});

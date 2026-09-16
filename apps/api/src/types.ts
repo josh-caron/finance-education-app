@@ -8,6 +8,10 @@ export interface Bindings {
   BETTER_AUTH_SECRET: string;
   /** Comma-separated origins allowed to send credentialed requests. */
   TRUSTED_ORIGINS: string;
+  /** Resend API key. Auth emails are only sent when this and EMAIL_FROM are both set. */
+  RESEND_API_KEY?: string;
+  /** Sender, e.g. "Finance Education App <noreply@example.com>", on a domain verified in Resend. */
+  EMAIL_FROM?: string;
 }
 
 type Auth = ReturnType<typeof createAuth>;

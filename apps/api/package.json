@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "cf-typegen": "wrangler types",
-    "test": "node --experimental-strip-types --test src/__tests__/*.test.mjs",
+    "test": "node --experimental-strip-types --test src/__tests__/*.test.mjs && vitest run",
     "db:migrate:local": "wrangler d1 migrations apply fin-edu-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply fin-edu-db --remote",
     "db:seed:local": "pnpm seed:generate && wrangler d1 execute fin-edu-db --local --file=./.seed/content.sql",
@@ -13,7 +13,7 @@
     "deploy:worker": "wrangler deploy",
     "dev": "wrangler dev",
     "seed:generate": "tsx scripts/generate-seed.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p test/tsconfig.json"
   },
   "dependencies": {
     "@better-auth/expo": "^1.7.3",
@@ -30,6 +30,7 @@
     "@types/node": "^26.5.0",
     "tsx": "^4.23.13",
     "typescript": "~6.0.3",
+    "vitest": "^5.0.0",
     "wrangler": "^4.129.1"
   }
 }

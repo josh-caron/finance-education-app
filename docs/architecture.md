@@ -47,6 +47,13 @@ to SQL, which Wrangler applies to D1. Two things follow: content changes are cod
 like code, and computed answers are derived with the same `@fin/core` finance helpers the
 lesson is teaching, so an exercise and its answer key cannot drift apart.
 
+Seeding upserts content by id rather than replacing it. Attempts and lesson progress
+reference lessons and exercises with `ON DELETE CASCADE`, so a delete-and-reinsert seed
+wiped every learner's history on each content update while leaving their total XP, which
+would have let everyone earn it again. The corollary is that ids are permanent: renaming
+one looks like a removal plus an addition, and removed content does take its progress
+with it. `apps/api/src/seed-sql.ts` explains the reordering detail.
+
 Exercise rows keep the whole exercise as a JSON `payload` column rather than one table per
 kind. Adding an exercise type is then a change to `@fin/core`'s union and the UI, with no
 migration.
@@ -57,6 +64,10 @@ The client sends `localDay` as `YYYY-MM-DD` on completion. Storing a UTC timesta
 break a streak for anyone studying late at night in a western timezone. `advanceStreak`
 treats same-day activity as a no-op, consecutive days as an extension, and any gap as a
 reset.
+
+Because the day comes from the client, the API only accepts a real calendar date within
+one day of its own UTC date, which covers every timezone. Without that, a learner could
+replay one lesson with consecutive future dates and build any streak they liked.
 
 ### One Worker serves the client and the API
 
@@ -106,7 +117,7 @@ and the daily rollup through `db.batch()`, so they cannot land partially.
 
 ```
 user ──< session, account            (Better Auth)
-user ──  learner_profiles            XP, streak, timezone
+user ──  learner_profiles            XP, streak
 user ──< lesson_progress             per-lesson status and best score
 user ──< exercise_attempts           append-only submission log
 user ──< daily_activity              per-day rollup for streaks and the weekly board
@@ -125,7 +136,6 @@ attempt log.
 | GET    | `/health`                                  | none     | Liveness                               |
 | \*     | `/api/auth/*`                              | none     | Better Auth (sign up/in/out)           |
 | GET    | `/api/content/units`                       | optional | Skill tree, with progress if signed in |
-| GET    | `/api/content/units/:unitId/lessons`       | optional | Lesson list for one unit               |
 | GET    | `/api/content/lessons/:lessonId`           | optional | Lesson with answer keys stripped       |
 | GET    | `/api/progress/me`                         | required | XP, level, streak, lesson statuses     |
 | POST   | `/api/progress/lessons/:lessonId/attempts` | required | Grade one submission                   |

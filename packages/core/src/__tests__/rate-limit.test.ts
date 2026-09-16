@@ -48,6 +48,14 @@ describe('scopeForPath', () => {
     expect(scopeForPath('/api/auth/sign-in/email')).toBe('sign-in');
   });
 
+  it('limits the endpoints that send email on request', () => {
+    expect(scopeForPath('/api/auth/request-password-reset')).toBe('email');
+    expect(scopeForPath('/api/auth/send-verification-email')).toBe('email');
+    // Following the emailed links does not send anything.
+    expect(scopeForPath('/api/auth/verify-email')).toBe('auth');
+    expect(scopeForPath('/api/auth/reset-password')).toBe('auth');
+  });
+
   it('treats other auth endpoints as one bucket', () => {
     expect(scopeForPath('/api/auth/get-session')).toBe('auth');
     expect(scopeForPath('/api/auth/sign-out')).toBe('auth');
@@ -64,10 +72,15 @@ describe('scopeForPath', () => {
 });
 
 describe('rateLimitRules', () => {
-  it('makes account creation the tightest rule', () => {
+  it('makes account creation the tightest rule, tied only with sending email', () => {
     const perSecond = (r: RateLimitRule) => r.max / r.window;
     for (const [name, other] of Object.entries(rateLimitRules)) {
       if (name === 'sign-up') continue;
+      // Both create something with a real cost: a permanent row, or an email.
+      if (name === 'email') {
+        expect(perSecond(rateLimitRules['sign-up']), name).toBeLessThanOrEqual(perSecond(other));
+        continue;
+      }
       expect(perSecond(rateLimitRules['sign-up']), name).toBeLessThan(perSecond(other));
     }
   });
@@ -77,6 +90,12 @@ describe('rateLimitRules', () => {
       expect(r.max, name).toBeGreaterThan(0);
       expect(r.window, name).toBeGreaterThan(0);
     }
+  });
+
+  it('holds email-sending endpoints tighter than other auth endpoints', () => {
+    const perSecond = (r: RateLimitRule) => r.max / r.window;
+    expect(perSecond(rateLimitRules.email)).toBeLessThan(perSecond(rateLimitRules.auth));
+    expect(perSecond(rateLimitRules.email)).toBeLessThan(perSecond(rateLimitRules['sign-in']));
   });
 
   it('lets a learner finish a lesson without being limited', () => {

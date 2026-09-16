@@ -13,6 +13,7 @@ import {
   advanceStreak,
   firstTryRate,
   gradeExercise,
+  isPlausibleLocalDay,
   lessonCompletionBonus,
   levelForXp,
   recentDayKeys,
@@ -29,17 +30,42 @@ export const progressRoutes = new Hono<AppEnv>();
 
 progressRoutes.use('*', requireAuth);
 
+/**
+ * Upper bounds on what a learner can submit. Submitted answers are stored as
+ * JSON on every attempt, so without caps a client could write arbitrarily large
+ * rows while staying under the rate limit. The limits are far above anything
+ * real content needs: ids are short slugs and ordering exercises have a handful
+ * of items.
+ */
+const MAX_ID_LENGTH = 200;
+const MAX_ORDERING_ITEMS = 50;
+
+const idSchema = z.string().min(1).max(MAX_ID_LENGTH);
+
 const answerSchema: z.ZodType<Answer> = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('multiple_choice'), choiceId: z.string().min(1) }),
-  z.object({ kind: z.literal('ordering'), order: z.array(z.string().min(1)).min(2) }),
+  z.object({ kind: z.literal('multiple_choice'), choiceId: idSchema }),
+  z.object({
+    kind: z.literal('ordering'),
+    order: z.array(idSchema).min(2).max(MAX_ORDERING_ITEMS),
+  }),
   z.object({ kind: z.literal('computed_answer'), value: z.number().finite() }),
 ]);
 
-/** YYYY-MM-DD in the learner's local time; streaks follow their calendar, not UTC. */
-const dayKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD day key');
+/**
+ * The learner's local day, YYYY-MM-DD. Streaks follow their calendar rather
+ * than UTC, which makes this client-controlled, so it must also be a day that
+ * could actually be today somewhere. Otherwise replays labelled with
+ * consecutive future days would build an arbitrary streak.
+ */
+const dayKeySchema = z
+  .string()
+  .max(10)
+  .refine((day) => isPlausibleLocalDay(day, new Date()), {
+    message: 'Expected today in YYYY-MM-DD, as a real date within a day of UTC',
+  });
 
 const submitSchema = z.object({
-  exerciseId: z.string().min(1),
+  exerciseId: idSchema,
   answer: answerSchema,
   /** Needed here because XP lands on submission, and lands in the day's rollup. */
   localDay: dayKeySchema,
@@ -47,7 +73,6 @@ const submitSchema = z.object({
 
 const completeSchema = z.object({
   localDay: dayKeySchema,
-  timezone: z.string().optional(),
 });
 
 /** How many days of history the streak strip shows. */
@@ -327,7 +352,6 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
         currentStreak: streak.currentStreak,
         longestStreak: streak.longestStreak,
         lastActiveDay: streak.lastActiveDay,
-        timezone: parsed.data.timezone ?? profile.timezone,
         updatedAt: now,
       })
       .where(eq(learnerProfiles.userId, user.id)),

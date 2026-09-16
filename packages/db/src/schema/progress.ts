@@ -20,7 +20,6 @@ export const learnerProfiles = sqliteTable('learner_profiles', {
   longestStreak: integer('longest_streak').notNull().default(0),
   /** YYYY-MM-DD in the learner's local time, so streaks follow their calendar. */
   lastActiveDay: text('last_active_day'),
-  timezone: text('timezone'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),

@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { createDb } from '@fin/db';
 
-import { createAuth } from '../auth';
+import { createAuth, type BackgroundTasks } from '../auth';
 import type { AppEnv } from '../types';
 
 /**
@@ -18,7 +18,7 @@ export const withDb = createMiddleware<AppEnv>(async (c, next) => {
  * not rejected earlier; `user` is null when the caller is anonymous.
  */
 export const withSession = createMiddleware<AppEnv>(async (c, next) => {
-  const auth = createAuth(c.env, c.get('db'));
+  const auth = createAuth(c.env, c.get('db'), executionContext(c));
   c.set('auth', auth);
 
   const result = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -27,6 +27,15 @@ export const withSession = createMiddleware<AppEnv>(async (c, next) => {
 
   await next();
 });
+
+/** Hono throws rather than returning undefined when there is no execution context. */
+function executionContext(c: { executionCtx: BackgroundTasks }): BackgroundTasks | undefined {
+  try {
+    return c.executionCtx;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Rejects anonymous callers. Use on any route that reads or writes learner data. */
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {

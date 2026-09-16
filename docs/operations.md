@@ -71,6 +71,18 @@ cd apps/api && npx wrangler deploy
 Migrations are deliberately not part of deploy. Apply them yourself when a
 release contains one, before deploying the code that expects the new columns.
 
+Content is not part of deploy either. When a release changes anything in
+`packages/content`, reseed production afterwards:
+
+```bash
+pnpm --filter @fin/api db:seed:remote
+```
+
+Reseeding is safe to repeat and keeps learner progress: content is updated in
+place by id. Two things do lose progress, so do them deliberately. Removing an
+exercise or lesson deletes its attempts and lesson progress, and renaming an id
+counts as removing the old one.
+
 ## D1
 
 Local and remote are separate databases. `--local` is a SQLite file under
