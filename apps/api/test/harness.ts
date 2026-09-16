@@ -49,50 +49,109 @@ export async function createHarness() {
     BETTER_AUTH_SECRET: 'test-secret-that-is-comfortably-over-32-characters',
     BETTER_AUTH_URL: BASE,
     TRUSTED_ORIGINS: 'fineduapp://',
+    RESEND_API_KEY: 're_test_key',
+    EMAIL_FROM: 'Finance Education App <test@example.com>',
   };
+
+  // Email goes to Resend over fetch. Only that URL is intercepted; everything
+  // else, including the D1 proxy, passes straight through.
+  const sentEmails: SentEmail[] = [];
+  let resendStatus = 200;
+  let resendGate: Promise<void> | null = null;
+  let deliveredEmails = 0;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (!url.startsWith('https://api.resend.com/')) return realFetch(input, init);
+
+    const payload = JSON.parse(String(init?.body)) as ResendPayload;
+    sentEmails.push({
+      to: payload.to[0]!,
+      from: payload.from,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+      authorization: new Headers(init?.headers).get('Authorization'),
+    });
+    if (resendGate) await resendGate;
+    deliveredEmails += 1;
+    return new Response(JSON.stringify({ id: `email-${sentEmails.length}` }), {
+      status: resendStatus,
+    });
+  }) as typeof fetch;
+
+  // A stand-in execution context that records background tasks, so tests can
+  // wait for emails that the Worker sends after responding.
+  const pending: Promise<unknown>[] = [];
+  const ctx = {
+    waitUntil: (task: Promise<unknown>) => void pending.push(task),
+    passThroughOnException: () => {},
+    props: {},
+  } as unknown as ExecutionContext;
+
+  async function settle() {
+    while (pending.length > 0) await Promise.allSettled(pending.splice(0));
+  }
 
   let userCount = 0;
 
   async function request(
     path: string,
-    { method = 'GET', body, cookie, env: overrides }: RequestOptions = {},
+    {
+      method = 'GET',
+      body,
+      cookie,
+      origin = BASE,
+      env: overrides,
+      settle: wait = true,
+    }: RequestOptions = {},
   ): Promise<Response> {
-    const headers: Record<string, string> = { Origin: BASE };
+    const headers: Record<string, string> = { Origin: origin };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (cookie) headers.Cookie = cookie;
 
-    return worker.fetch(
+    const response = await worker.fetch(
       new Request(`${BASE}${path}`, {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
       }),
       { ...env, ...overrides },
-      proxy.ctx,
+      ctx,
     );
+
+    if (wait) await settle();
+    return response;
   }
 
   /** Signs up a fresh learner and returns the session cookie for later requests. */
   async function signUp(name = 'Learner'): Promise<string> {
+    return (await signUpAs(name)).cookie;
+  }
+
+  /** Like signUp, but also returns the address and password, for auth tests. */
+  async function signUpAs(name = 'Learner', password = 'password123') {
     userCount += 1;
     const email = `learner-${userCount}-${crypto.randomUUID()}@example.com`;
 
     const response = await request('/api/auth/sign-up/email', {
       method: 'POST',
-      body: { name, email, password: 'password123' },
+      body: { name, email, password },
     });
 
     if (response.status !== 200) {
       throw new Error(`Sign-up failed with ${response.status}: ${await response.text()}`);
     }
 
-    const cookie = response.headers
-      .getSetCookie()
-      .map((header) => header.split(';')[0])
-      .join('; ');
+    return { cookie: sessionCookie(response), email, password };
+  }
 
-    if (!cookie) throw new Error('Sign-up returned no session cookie');
-    return cookie;
+  async function signIn(email: string, password: string) {
+    const response = await request('/api/auth/sign-in/email', {
+      method: 'POST',
+      body: { email, password },
+    });
+    return { status: response.status, cookie: response.ok ? sessionCookie(response) : '' };
   }
 
   function attempt(cookie: string, lessonId: string, submission: object, localDay: string) {
@@ -128,9 +187,35 @@ export async function createHarness() {
     attempt,
     complete,
     answerAll,
+    signUpAs,
+    signIn,
+    settle,
+    /** Emails the Worker handed to Resend, oldest first. */
+    emails: () => [...sentEmails],
+    emailsTo: (address: string) => sentEmails.filter((email) => email.to === address),
+    /** How many Resend calls have finished, as opposed to started. */
+    deliveredCount: () => deliveredEmails,
+    /** Holds every Resend call open until the returned function is called. */
+    holdResend: () => {
+      let release!: () => void;
+      resendGate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return () => {
+        resendGate = null;
+        release();
+      };
+    },
+    /** Makes the stubbed Resend API answer with this status from now on. */
+    setResendStatus: (status: number) => {
+      resendStatus = status;
+    },
     /** Rate limits persist in D1, so each test starts with a clean slate. */
     resetRateLimits: () => db.prepare('DELETE FROM rate_limits').run(),
-    dispose: () => proxy.dispose(),
+    dispose: async () => {
+      globalThis.fetch = realFetch;
+      await proxy.dispose();
+    },
   };
 }
 
@@ -156,7 +241,45 @@ interface RequestOptions {
   method?: string;
   body?: unknown;
   cookie?: string;
+  /** Origin header to send. Defaults to the test base URL. */
+  origin?: string;
   env?: Partial<Bindings>;
+  /** Wait for background tasks such as emails before returning. Defaults to true. */
+  settle?: boolean;
+}
+
+export interface SentEmail {
+  to: string;
+  from: string;
+  subject: string;
+  text: string;
+  html: string;
+  authorization: string | null;
+}
+
+interface ResendPayload {
+  from: string;
+  to: string[];
+  subject: string;
+  text: string;
+  html: string;
+}
+
+/** The first link in an email, as a path and query this harness can request. */
+export function linkIn(email: SentEmail): string {
+  const match = email.text.match(/https?:\/\/\S+/);
+  if (!match) throw new Error(`No link in email: ${email.subject}`);
+  const url = new URL(match[0]);
+  return `${url.pathname}${url.search}`;
+}
+
+function sessionCookie(response: Response): string {
+  const cookie = response.headers
+    .getSetCookie()
+    .map((header) => header.split(';')[0])
+    .join('; ');
+  if (!cookie) throw new Error('Response set no session cookie');
+  return cookie;
 }
 
 export interface AttemptBody {

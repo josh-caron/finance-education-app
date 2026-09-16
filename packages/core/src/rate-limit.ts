@@ -52,6 +52,13 @@ export function decideRateLimit(
 export const rateLimitRules = {
   'sign-up': { max: 5, window: 3600 },
   'sign-in': { max: 10, window: 300 },
+  /**
+   * Endpoints that send email on request: resending verification and asking for
+   * a password reset. Tighter than other auth endpoints because every call costs
+   * an email. Per-address limits cannot fully protect a daily quota shared by all
+   * learners, though; see docs/known-issues.md.
+   */
+  email: { max: 5, window: 3600 },
   /** Any other auth endpoint: session reads, sign-out, and so on. */
   auth: { max: 60, window: 60 },
   /** Answer submissions. A lesson is a handful of these, not hundreds. */
@@ -72,6 +79,12 @@ export function scopeForPath(pathname: string): RateLimitScope | null {
   if (pathname.startsWith('/api/auth/')) {
     if (pathname.includes('/sign-up/')) return 'sign-up';
     if (pathname.includes('/sign-in/')) return 'sign-in';
+    if (
+      pathname === '/api/auth/request-password-reset' ||
+      pathname === '/api/auth/send-verification-email'
+    ) {
+      return 'email';
+    }
     return 'auth';
   }
 
