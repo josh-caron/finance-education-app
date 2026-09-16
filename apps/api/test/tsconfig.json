@@ -1,0 +1,10 @@
+{
+  // Route tests run in Node through Vitest, with Worker types for the code under
+  // test and Vite's client types for import.meta.glob.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["@cloudflare/workers-types", "vite/client"]
+  },
+  "include": ["./**/*.ts", "../vitest.config.ts"]
+}

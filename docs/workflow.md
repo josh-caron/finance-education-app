@@ -18,6 +18,8 @@ A backlog item is done when:
 - it works on web and on at least one native target,
 - `pnpm test` and `pnpm typecheck` pass,
 - new domain rules in `@fin/core` have tests,
+- a change to an API route has a test in `apps/api/test`, which runs the real Worker
+  against a real in-memory D1,
 - schema changes ship with a generated migration,
 - the README or `docs/architecture.md` is updated if the change alters how someone runs or
   reasons about the project.
