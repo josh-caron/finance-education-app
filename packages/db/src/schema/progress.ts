@@ -82,6 +82,8 @@ export const exerciseAttempts = sqliteTable(
     isCorrect: integer('is_correct', { mode: 'boolean' }).notNull(),
     submitted: text('submitted', { mode: 'json' }).$type<Answer>().notNull(),
     xpAwarded: integer('xp_awarded').notNull().default(0),
+    /** True when the learner revealed a hint before this submission. */
+    hintUsed: integer('hint_used', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -107,5 +109,23 @@ export const dailyActivity = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.userId, table.day] }),
     index('daily_activity_day_idx').on(table.day),
+  ],
+);
+
+/** One row per earned badge. Rows are never deleted when progress later changes. */
+export const userAchievements = sqliteTable(
+  'user_achievements',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    achievementId: text('achievement_id').notNull(),
+    earnedAt: integer('earned_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.achievementId] }),
+    index('user_achievements_user_idx').on(table.userId),
   ],
 );
