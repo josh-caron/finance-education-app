@@ -8,6 +8,7 @@ import {
   learnerProfiles,
   lessonProgress,
   lessons,
+  userAchievements,
 } from '@fin/db';
 import {
   advanceStreak,
@@ -15,13 +16,16 @@ import {
   gradeExercise,
   isPlausibleLocalDay,
   lessonCompletionBonus,
+  lessonRunIsPerfect,
   levelForXp,
+  levelProgress,
   recentDayKeys,
   streakHealth,
   xpForAttempt,
   type Answer,
   type StreakState,
 } from '@fin/core';
+import { catalogWithEarned, celebrationFor, evaluateAndAward } from '../gamification';
 
 import { requireAuth } from '../middleware/session';
 import type { AppEnv } from '../types';
@@ -69,6 +73,7 @@ const submitSchema = z.object({
   answer: answerSchema,
   /** Needed here because XP lands on submission, and lands in the day's rollup. */
   localDay: dayKeySchema,
+  hintUsed: z.boolean().optional().default(false),
 });
 
 const completeSchema = z.object({
@@ -100,19 +105,20 @@ progressRoutes.get('/me', async (c) => {
   const window = recentDayKeys(today, STREAK_WINDOW_DAYS);
   const windowStart = window[0]!;
 
-  const [lessonRows, activityRows] = await Promise.all([
+  const [lessonRows, activityRows, achievementRows] = await Promise.all([
     db.select().from(lessonProgress).where(eq(lessonProgress.userId, user.id)),
     db
       .select()
       .from(dailyActivity)
       .where(and(eq(dailyActivity.userId, user.id), gte(dailyActivity.day, windowStart))),
+    db.select().from(userAchievements).where(eq(userAchievements.userId, user.id)),
   ]);
 
   const activityByDay = new Map(activityRows.map((row) => [row.day, row]));
 
   return c.json({
-    totalXp: profile.totalXp,
-    ...levelForXp(profile.totalXp),
+    ...levelProgress(profile.totalXp),
+    achievements: catalogWithEarned(achievementRows),
     currentStreak: profile.currentStreak,
     longestStreak: profile.longestStreak,
     lastActiveDay: profile.lastActiveDay,
@@ -197,6 +203,7 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
     isCorrect: result.correct,
     submitted: parsed.data.answer,
     xpAwarded,
+    hintUsed: parsed.data.hintUsed,
   });
 
   const markInProgress = db
@@ -228,6 +235,17 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
   }
 
   const totalXp = profile.totalXp + xpAwarded;
+  const previous = levelForXp(profile.totalXp);
+  const next = levelForXp(totalXp);
+  const lessonRows = await db
+    .select({ status: lessonProgress.status })
+    .from(lessonProgress)
+    .where(eq(lessonProgress.userId, user.id));
+  const newAchievements = await evaluateAndAward(db, c.env.DB, user.id, {
+    completedLessonCount: lessonRows.filter((row) => row.status === 'completed').length,
+    currentStreak: profile.currentStreak,
+    perfectLessonJustCompleted: false,
+  });
 
   return c.json({
     ...result,
@@ -235,8 +253,11 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
     xpAwarded,
     /** True when the exercise was already banked, so this pass was practice. */
     practice: alreadySolved,
-    totalXp,
-    ...levelForXp(totalXp),
+    ...levelProgress(totalXp),
+    previousLevel: previous.level,
+    newLevel: next.level,
+    leveledUp: next.level > previous.level,
+    newAchievements,
   });
 });
 
@@ -373,6 +394,22 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
   ]);
 
   const totalXp = profile.totalXp + bonus;
+  const previous = levelForXp(profile.totalXp);
+  const next = levelForXp(totalXp);
+  const completedLessons = await db
+    .select({ lessonId: lessonProgress.lessonId })
+    .from(lessonProgress)
+    .where(and(eq(lessonProgress.userId, user.id), eq(lessonProgress.status, 'completed')));
+  const celebration = await celebrationFor(db, c.env.DB, {
+    userId: user.id,
+    lessonUnitId: lesson.unitId,
+    firstCompletion,
+    completedLessonCount: completedLessons.length,
+    currentStreak: streak.currentStreak,
+    perfectLessonJustCompleted: lessonRunIsPerfect(outcomes),
+    previousLevel: previous.level,
+    newLevel: next.level,
+  });
 
   return c.json({
     xpEarned,
@@ -381,10 +418,10 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
     firstCompletion,
     /** True when nothing new was earned, so the UI can frame it as practice. */
     practice: xpEarned === 0,
-    totalXp,
-    ...levelForXp(totalXp),
+    ...levelProgress(totalXp),
     currentStreak: streak.currentStreak,
     longestStreak: streak.longestStreak,
+    celebration,
   });
 });
 

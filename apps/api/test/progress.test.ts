@@ -456,3 +456,41 @@ describe('streaks', () => {
     expect(second.currentStreak).toBe(1);
   });
 });
+
+describe('achievements on completion', () => {
+  it('awards First Steps and Perfect Lesson once on a clean first run', async () => {
+    const cookie = await h.signUp();
+    await h.answerAll(cookie, 'basics.one', DAY1);
+    const first = await json<CompletionBody>(await h.complete(cookie, 'basics.one', DAY1));
+    expect(first.celebration?.newAchievements.map((item) => item.id)).toEqual(
+      expect.arrayContaining(['first_steps', 'perfect_lesson']),
+    );
+
+    await h.answerAll(cookie, 'basics.one', DAY1);
+    const replay = await json<CompletionBody>(await h.complete(cookie, 'basics.one', DAY1));
+    expect(replay.celebration?.newAchievements.map((item) => item.id) ?? []).not.toContain(
+      'first_steps',
+    );
+  });
+
+  it('does not award Perfect Lesson after an incorrect attempt', async () => {
+    const cookie = await h.signUp();
+    await h.attempt(
+      cookie,
+      'basics.one',
+      {
+        exerciseId: choice.exerciseId,
+        answer: { kind: 'multiple_choice', choiceId: 'a' },
+      },
+      DAY1,
+    );
+    await h.answerAll(cookie, 'basics.one', DAY1);
+    const completion = await json<CompletionBody>(await h.complete(cookie, 'basics.one', DAY1));
+    expect(completion.celebration?.newAchievements.map((item) => item.id) ?? []).not.toContain(
+      'perfect_lesson',
+    );
+    expect(completion.celebration?.newAchievements.map((item) => item.id) ?? []).toContain(
+      'first_steps',
+    );
+  });
+});

@@ -302,6 +302,11 @@ export interface CompletionBody {
   level: number;
   currentStreak: number;
   longestStreak: number;
+  celebration?: {
+    unitJustCompleted: boolean;
+    leveledUp: boolean;
+    newAchievements: { id: string }[];
+  };
 }
 
 function splitMigration(sql: string): string[] {
