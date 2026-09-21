@@ -57,12 +57,43 @@ export function levelForXp(totalXp: number): {
   xpIntoLevel: number;
   xpToNext: number;
 } {
+  const safeXp = Number.isFinite(totalXp) ? Math.max(0, totalXp) : 0;
   let level = 1;
-  while (totalXp >= xpForLevel(level + 1)) level += 1;
+  while (safeXp >= xpForLevel(level + 1)) level += 1;
 
   const floor = xpForLevel(level);
   const ceiling = xpForLevel(level + 1);
-  return { level, xpIntoLevel: totalXp - floor, xpToNext: ceiling - totalXp };
+  return { level, xpIntoLevel: safeXp - floor, xpToNext: ceiling - safeXp };
+}
+
+/**
+ * Named ranks on the existing quadratic curve (level 2 = 100, 3 = 300, 4 = 600,
+ * 5 = 1000). Those thresholds are one clean first-try lesson, about a unit,
+ * two units, and a full first-pass through the authored course.
+ */
+export const LEVEL_TITLES = [
+  { level: 1, name: 'Money Rookie', minXp: xpForLevel(1) },
+  { level: 2, name: 'Budget Builder', minXp: xpForLevel(2) },
+  { level: 3, name: 'Savings Starter', minXp: xpForLevel(3) },
+  { level: 4, name: 'Money Manager', minXp: xpForLevel(4) },
+  { level: 5, name: 'Finance Pro', minXp: xpForLevel(5) },
+] as const;
+
+export function titleForLevel(level: number): string {
+  if (level <= 1) return LEVEL_TITLES[0].name;
+  const named = LEVEL_TITLES.find((item) => item.level === level);
+  return named?.name ?? LEVEL_TITLES[LEVEL_TITLES.length - 1]!.name;
+}
+
+export function levelProgress(totalXp: number) {
+  const progress = levelForXp(totalXp);
+  return {
+    ...progress,
+    title: titleForLevel(progress.level),
+    nextTitle: titleForLevel(progress.level + 1),
+    totalXp: Number.isFinite(totalXp) ? Math.max(0, totalXp) : 0,
+    span: progress.xpIntoLevel + progress.xpToNext,
+  };
 }
 
 export interface StreakState {

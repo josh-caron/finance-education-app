@@ -7,7 +7,9 @@ import {
   isStreakActive,
   lessonCompletionBonus,
   levelForXp,
+  levelProgress,
   recentDayKeys,
+  titleForLevel,
   streakHealth,
   toDayKey,
   weekdayLabel,
@@ -87,6 +89,24 @@ describe('levelForXp', () => {
     expect(levelForXp(99).level).toBe(1);
     expect(levelForXp(100).level).toBe(2);
     expect(levelForXp(300).level).toBe(3);
+  });
+
+  it('treats negative XP as level 1 and never returns a zero-width bar', () => {
+    expect(levelForXp(-40)).toEqual({ level: 1, xpIntoLevel: 0, xpToNext: 100 });
+    const mid = levelForXp(720);
+    expect(mid.level).toBe(4);
+    expect(mid.xpIntoLevel / (mid.xpIntoLevel + mid.xpToNext)).toBeCloseTo(120 / 400);
+  });
+});
+
+describe('level titles', () => {
+  it('names the five ranks on the existing XP curve', () => {
+    expect(titleForLevel(1)).toBe('Money Rookie');
+    expect(titleForLevel(3)).toBe('Savings Starter');
+    expect(titleForLevel(5)).toBe('Finance Pro');
+    expect(titleForLevel(8)).toBe('Finance Pro');
+    expect(levelProgress(0).title).toBe('Money Rookie');
+    expect(levelProgress(100).title).toBe('Budget Builder');
   });
 });
 
