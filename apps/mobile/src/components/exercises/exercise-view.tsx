@@ -1,5 +1,5 @@
 import { parseNumericAnswer, type Answer, type PublicExercise } from '@fin/core';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -57,11 +57,15 @@ export function ExerciseView({
   draft,
   onChange,
   disabled,
+  hintRevealed,
+  onRevealHint,
 }: {
   exercise: PublicExercise;
   draft: Draft;
   onChange: (draft: Draft) => void;
   disabled: boolean;
+  hintRevealed: boolean;
+  onRevealHint: () => void;
 }) {
   return (
     <View style={styles.container}>
@@ -69,7 +73,19 @@ export function ExerciseView({
         {exercise.prompt}
       </ThemedText>
 
-      {exercise.kind !== 'computed_answer' && exercise.hint ? (
+      {exercise.hint && !hintRevealed ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Show hint"
+          disabled={disabled}
+          onPress={onRevealHint}
+        >
+          <ThemedText type="smallBold" themeColor="accent">
+            Show hint
+          </ThemedText>
+        </Pressable>
+      ) : null}
+      {exercise.hint && hintRevealed ? (
         <ThemedText type="small" themeColor="textSecondary">
           Hint: {exercise.hint}
         </ThemedText>

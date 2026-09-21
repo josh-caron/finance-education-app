@@ -65,11 +65,7 @@ export function ComputedAnswer({
         autoCorrect={false}
       />
 
-      {exercise.hint ? (
-        <ThemedText type="small" themeColor="textSecondary">
-          Hint: {exercise.hint}
-        </ThemedText>
-      ) : null}
+      {null}
     </View>
   );
 }

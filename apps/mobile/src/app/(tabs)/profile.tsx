@@ -13,7 +13,7 @@ import { XpBar } from '@/components/xp-bar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch } from '@/lib/api';
-import type { LearnerProfile } from '@/lib/api-types';
+import type { CatalogAchievement, LearnerProfile } from '@/lib/api-types';
 import { signOut, useSession } from '@/lib/auth-client';
 
 export default function ProfileScreen() {
@@ -78,6 +78,8 @@ export default function ProfileScreen() {
             <View style={styles.heroMeta}>
               <XpBar
                 level={profile.level}
+                title={profile.title}
+                nextTitle={profile.nextTitle}
                 xpIntoLevel={profile.xpIntoLevel}
                 xpToNext={profile.xpToNext}
               />
@@ -89,6 +91,8 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
+
+          <AchievementsList achievements={profile.achievements ?? []} />
 
           <StreakStrip
             days={profile.recentDays}
@@ -112,6 +116,40 @@ export default function ProfileScreen() {
 function levelFraction(xpIntoLevel: number, xpToNext: number): number {
   const span = xpIntoLevel + xpToNext;
   return span === 0 ? 0 : xpIntoLevel / span;
+}
+
+function AchievementsList({ achievements }: { achievements: CatalogAchievement[] }) {
+  const theme = useTheme();
+  const unlocked = achievements.filter((item) => item.earnedAt).length;
+
+  return (
+    <View style={styles.achievements} accessibilityRole="summary">
+      <ThemedText type="smallBold">
+        Achievements {unlocked} / {achievements.length || 7} unlocked
+      </ThemedText>
+      {achievements.map((item) => {
+        const earned = Boolean(item.earnedAt);
+        return (
+          <View
+            key={item.id}
+            accessibilityLabel={`${item.name}. ${earned ? 'Unlocked' : 'Locked'}. ${item.description}`}
+            style={[styles.badge, { backgroundColor: theme.backgroundElement }]}
+          >
+            <ThemedText style={{ opacity: earned ? 1 : 0.45 }}>{item.icon}</ThemedText>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold">{item.name}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {item.description}
+              </ThemedText>
+              <ThemedText type="small" themeColor={earned ? 'success' : 'locked'}>
+                {earned ? `Unlocked ${new Date(item.earnedAt!).toLocaleDateString()}` : 'Locked'}
+              </ThemedText>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -140,4 +178,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   statValue: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  achievements: { gap: Spacing.two },
+  badge: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    borderRadius: 12,
+    padding: Spacing.three,
+    alignItems: 'flex-start',
+  },
 });

@@ -1,4 +1,4 @@
-import type { GradeResult, PublicExercise, StreakHealth } from '@fin/core';
+import type { AchievementDefinition, GradeResult, PublicExercise, StreakHealth } from '@fin/core';
 
 /** Response shapes returned by apps/api. Kept next to the client that reads them. */
 
@@ -28,6 +28,28 @@ export interface LessonDetail {
   exercises: PublicExercise[];
 }
 
+export interface CatalogAchievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  earnedAt: string | null;
+}
+
+export interface Celebration {
+  unitJustCompleted: boolean;
+  unitId: string | null;
+  unitTitle: string | null;
+  unlockedUnit: { id: string; title: string } | null;
+  previousLevel: number;
+  previousTitle: string;
+  newLevel: number;
+  newTitle: string;
+  leveledUp: boolean;
+  newAchievements: AchievementDefinition[];
+}
+
 export interface AttemptResult extends GradeResult {
   attemptNumber: number;
   xpAwarded: number;
@@ -35,8 +57,11 @@ export interface AttemptResult extends GradeResult {
   practice: boolean;
   totalXp: number;
   level: number;
+  title?: string;
   xpIntoLevel: number;
   xpToNext: number;
+  leveledUp?: boolean;
+  newAchievements?: AchievementDefinition[];
 }
 
 export interface LessonCompletion {
@@ -53,6 +78,8 @@ export interface LessonCompletion {
   xpToNext: number;
   currentStreak: number;
   longestStreak: number;
+  title?: string;
+  celebration?: Celebration;
 }
 
 export interface DailyActivity {
@@ -65,8 +92,11 @@ export interface DailyActivity {
 export interface LearnerProfile {
   totalXp: number;
   level: number;
+  title?: string;
+  nextTitle?: string;
   xpIntoLevel: number;
   xpToNext: number;
+  achievements?: CatalogAchievement[];
   currentStreak: number;
   longestStreak: number;
   lastActiveDay: string | null;
