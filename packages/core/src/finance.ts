@@ -103,3 +103,25 @@ export function creditUtilization(balance: number, creditLimit: number): number 
   if (creditLimit <= 0) return 0;
   return (balance / creditLimit) * 100;
 }
+
+/** Income minus one or more expenses from the same period. */
+export function cashRemainder(income: number, ...amounts: number[]): number {
+  return amounts.reduce((remaining, amount) => remaining - amount, income);
+}
+
+/**
+ * Whole deposits needed to cover a gap. Partial deposits do not count until they
+ * are made, so 400 remaining at 75 per deposit is 6, not 5.33.
+ */
+export function depositsToReach(target: number, alreadySaved: number, perDeposit: number): number {
+  const gap = target - alreadySaved;
+  if (gap <= 0) return 0;
+  if (perDeposit <= 0) return Number.POSITIVE_INFINITY;
+  return Math.ceil(gap / perDeposit);
+}
+
+/** How many months of essential expenses a cash reserve would cover. */
+export function monthsOfExpensesCovered(savings: number, monthlyEssentials: number): number {
+  if (monthlyEssentials <= 0) return 0;
+  return savings / monthlyEssentials;
+}

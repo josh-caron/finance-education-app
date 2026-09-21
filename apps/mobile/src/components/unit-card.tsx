@@ -7,15 +7,18 @@ import { useTheme } from '@/hooks/use-theme';
 import type { UnitSummary } from '@/lib/api-types';
 
 /** One node of the skill tree: a unit and its lessons. */
-export function UnitCard({ unit }: { unit: UnitSummary }) {
+export function UnitCard({ unit, units }: { unit: UnitSummary; units: UnitSummary[] }) {
   const theme = useTheme();
+  const requiredTitles = unit.prerequisites.map(
+    (id) => units.find((item) => item.id === id)?.title ?? id,
+  );
 
   return (
     <View
       style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
     >
       <ThemedText type="smallBold" themeColor={unit.unlocked ? 'brand' : 'locked'}>
-        {unit.unlocked ? `Unit ${unit.order}` : `Locked · finish ${unit.prerequisites.join(', ')}`}
+        {unit.unlocked ? `Unit ${unit.order}` : `Locked · finish ${requiredTitles.join(', ')}`}
       </ThemedText>
 
       <ThemedText type="default" style={styles.title}>

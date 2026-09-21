@@ -1,6 +1,7 @@
 import { courseSchema, type Course, type Exercise, type Lesson, type Unit } from '@fin/core';
 
 import { moneyBasics } from './units/01-money-basics';
+import { bankingEmergency } from './units/02-banking-emergency';
 import { budgetingSaving } from './units/00-budgeting-saving';
 
 /**
@@ -8,7 +9,7 @@ import { budgetingSaving } from './units/00-budgeting-saving';
  * check below runs at import time, so a malformed unit fails fast in dev, in
  * CI, and in the seed script rather than at lesson time.
  */
-export const course: Course = courseSchema.parse([budgetingSaving, moneyBasics]);
+export const course: Course = courseSchema.parse([budgetingSaving, bankingEmergency, moneyBasics]);
 
 export const units: Unit[] = [...course].sort((a, b) => a.order - b.order);
 

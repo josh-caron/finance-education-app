@@ -17,6 +17,8 @@ const exerciseBase = z.object({
   prompt: z.string().min(1),
   /** Shown after the learner answers, right or wrong. */
   explanation: z.string().optional(),
+  /** Optional teaching nudge available before grading. */
+  hint: z.string().optional(),
 });
 
 export const multipleChoiceExerciseSchema = exerciseBase.extend({
@@ -48,7 +50,6 @@ export const computedAnswerExerciseSchema = exerciseBase.extend({
     type: z.enum(['absolute', 'relative']),
     value: z.number().positive(),
   }),
-  hint: z.string().optional(),
 });
 
 export const exerciseSchema = z.discriminatedUnion('kind', [

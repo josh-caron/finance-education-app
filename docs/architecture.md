@@ -180,5 +180,5 @@ Tracked against the pitch backlog:
   plain progress bar where the real treatment goes.
 - **Email verification and password reset**. Needs an email provider, so sign-up
   currently works without one.
-- **Content beyond the starter unit (4, 7)**. `money-basics` exists to exercise all three
-  exercise types end to end.
+- **Content beyond the first two units**. Budgeting/saving and banking/emergency savings
+  are authored; `money-basics` remains a short compounding and credit starter.

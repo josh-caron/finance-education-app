@@ -76,6 +76,7 @@ export default function LessonScreen() {
       // The skill tree and the header stats both moved.
       void queryClient.invalidateQueries({ queryKey: ['units'] });
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      void queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
     },
   });
 
@@ -210,6 +211,10 @@ export default function LessonScreen() {
                 ? `Correct · +${result.xpAwarded} XP`
                 : 'Correct · practice, already banked'}
           </ThemedText>
+
+          {!result.correct && exercise?.hint ? (
+            <ThemedText type="small">Hint: {exercise.hint}</ThemedText>
+          ) : null}
 
           {result.expected ? <ThemedText type="small">Answer: {result.expected}</ThemedText> : null}
 

@@ -1,8 +1,8 @@
 import { compoundBalance, creditUtilization, type Unit } from '@fin/core';
 
 /**
- * Starter unit. It exists mainly to exercise all three exercise types end to
- * end; the full first module is backlog item 4.
+ * Third unit on the skill tree. Locked until banking and emergency savings is
+ * finished, same rule as every unit after the first.
  *
  * Convention: ids are stable slugs (`unit.lesson.exercise`) because progress
  * rows reference them. Renaming an id orphans a learner's progress.
@@ -11,8 +11,8 @@ export const moneyBasics: Unit = {
   id: 'money-basics',
   title: 'Money Basics',
   description: 'Interest, inflation, and the habits that decide what your money is worth later.',
-  order: 1,
-  prerequisites: [],
+  order: 2,
+  prerequisites: ['banking-emergency'],
   lessons: [
     {
       id: 'money-basics.compounding',
@@ -30,6 +30,7 @@ export const moneyBasics: Unit = {
             { id: 'c', label: 'It is paid only when you withdraw the money' },
           ],
           correctChoiceId: 'b',
+          hint: 'Ask whether this period’s interest is calculated on a growing balance.',
           explanation:
             'Simple interest always pays on the original principal. Compound interest pays on the growing balance, so the same rate produces more each period.',
         },
@@ -56,6 +57,7 @@ export const moneyBasics: Unit = {
             { id: 'index', label: '8% index fund' },
           ],
           correctOrder: ['savings', 'bond', 'index'],
+          hint: 'A higher annual rate grows the same $1,000 farther over 20 years.',
           explanation:
             'The gap widens with time: $1,105 versus $2,191 versus $4,661. A few percentage points compound into multiples over decades.',
         },
@@ -90,6 +92,7 @@ export const moneyBasics: Unit = {
             { id: 'c', label: 'It rises from 20% to about 33%, because your limit shrank' },
           ],
           correctChoiceId: 'c',
+          hint: 'Utilization is balance divided by remaining total limit, not the number of cards.',
           explanation:
             'Closing a card removes its limit from the denominator. The same $500 against $1,500 of remaining credit is 33% utilization.',
         },

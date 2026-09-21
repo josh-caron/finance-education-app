@@ -98,7 +98,11 @@ describe('parseNumericAnswer', () => {
   });
   it.each([
     ['1,234.56', 1234.56],
+    ['$ 1,234.56', 1234.56],
+    ['1,234.56', 1234.56],
     ['$1,234.56', 1234.56],
+    ['12.', 12],
+    ['7 %', 7],
     ['-12.5', -12.5],
     ['-$12.50', -12.5],
     ['.5', 0.5],
@@ -127,7 +131,6 @@ describe('parseNumericAnswer', () => {
     '.',
     '-',
     '   ',
-    '12.',
   ])('rejects malformed or unsupported input %s', (input) => {
     expect(parseNumericAnswer(input)).toBeNull();
   });

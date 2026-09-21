@@ -91,7 +91,7 @@ export default function LeaderboardScreen() {
             <View style={styles.group}>
               <ThemedText type="smallBold">Top learners</ThemedText>
               {query.data.entries.map((entry, index) => (
-                <RankingRow key={index} entry={entry} />
+                <RankingRow key={`${entry.rank}-${entry.name}-${index}`} entry={entry} />
               ))}
             </View>
           )}
@@ -99,7 +99,7 @@ export default function LeaderboardScreen() {
             <View style={styles.group}>
               <ThemedText type="smallBold">Around you</ThemedText>
               {query.data.nearby.map((entry, index) => (
-                <RankingRow key={index} entry={entry} />
+                <RankingRow key={`near-${entry.rank}-${entry.name}-${index}`} entry={entry} />
               ))}
             </View>
           ) : null}
@@ -123,6 +123,8 @@ function RankingRow({ entry }: { entry: LeaderboardEntry }) {
   const theme = useTheme();
   return (
     <View
+      accessibilityRole="text"
+      accessibilityLabel={`Rank ${entry.rank}, ${entry.name}${entry.isYou ? ', you' : ''}, ${entry.xp} XP`}
       style={[
         styles.row,
         { backgroundColor: entry.isYou ? theme.successSurface : theme.backgroundElement },

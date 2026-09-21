@@ -95,10 +95,16 @@ export function parseNumericAnswer(
 ): number | null {
   // Accept decimal notation and correctly grouped US thousands separators.
   // Validate before removing formatting: "1,2" and "1 2" must not become 12.
-  const text = input.trim();
+  // Spaces around $ or % are formatting, but spaces inside the digits are not
+  // ("1 2" must stay invalid). A trailing decimal is treated as a whole number.
+  const text = input
+    .trim()
+    .replace(/^([+-])\s+/, '$1')
+    .replace(/^([+-]?)\$\s*/, '$1$')
+    .replace(/\s+%$/, '%');
   if (format && format !== 'usd' && text.includes('$')) return null;
   if (format && format !== 'percent' && text.includes('%')) return null;
-  if (!/^[+-]?\$?(?:\d{1,3}(?:,\d{3})+|\d+|(?=\.\d))(?:\.\d+)?%?$/.test(text)) {
+  if (!/^[+-]?\$?(?:\d{1,3}(?:,\d{3})+|\d+|(?=\.\d))(?:\.\d*)?%?$/.test(text)) {
     return null;
   }
   // Currency and percent together have ambiguous units.
