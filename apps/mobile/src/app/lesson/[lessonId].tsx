@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { CelebrationCard } from '@/components/celebration';
 import {
   emptyDraft,
   ExerciseView,
@@ -33,6 +34,7 @@ export default function LessonScreen() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [completion, setCompletion] = useState<LessonCompletion | null>(null);
+  const [hintsUsed, setHintsUsed] = useState<Record<string, boolean>>({});
   // Snapshotted when the lesson opens so the summary can tell a level-up apart
   // from ordinary XP gain.
   const levelBefore = useRef(1);
@@ -60,6 +62,7 @@ export default function LessonScreen() {
         exerciseId: exercise.id,
         answer,
         localDay: toDayKey(new Date()),
+        hintUsed: Boolean(exercise && hintsUsed[exercise.id]),
       });
     },
     onSuccess: setResult,
@@ -102,10 +105,22 @@ export default function LessonScreen() {
   const lesson = lessonQuery.data;
 
   if (completion) {
-    const leveledUp = completion.level > levelBefore.current;
+    const leveledUp = completion.celebration?.leveledUp ?? completion.level > levelBefore.current;
+    const showCoordinated =
+      completion.celebration &&
+      (completion.celebration.unitJustCompleted ||
+        completion.celebration.leveledUp ||
+        completion.celebration.newAchievements.length > 0);
 
     return (
       <Screen>
+        {showCoordinated && completion.celebration ? (
+          <CelebrationCard
+            celebration={completion.celebration}
+            xpEarned={completion.xpEarned}
+            onContinue={() => router.back()}
+          />
+        ) : null}
         <View style={styles.celebration}>
           <ThemedText type="subtitle">
             {leveledUp ? `Level ${completion.level}` : 'Lesson complete'}
@@ -138,6 +153,7 @@ export default function LessonScreen() {
 
         <XpBar
           level={completion.level}
+          title={completion.title ?? completion.celebration?.newTitle}
           xpIntoLevel={completion.xpIntoLevel}
           xpToNext={completion.xpToNext}
         />
@@ -194,6 +210,8 @@ export default function LessonScreen() {
           draft={currentDraft}
           onChange={setDraft}
           disabled={result !== null}
+          hintRevealed={Boolean(hintsUsed[exercise.id])}
+          onRevealHint={() => setHintsUsed((current) => ({ ...current, [exercise.id]: true }))}
         />
       ) : null}
 
@@ -219,6 +237,15 @@ export default function LessonScreen() {
           {result.expected ? <ThemedText type="small">Answer: {result.expected}</ThemedText> : null}
 
           {result.explanation ? <ThemedText type="small">{result.explanation}</ThemedText> : null}
+
+          {result.newAchievements?.map((item) => (
+            <ThemedText key={item.id} type="smallBold">
+              Achievement unlocked: {item.icon} {item.name}
+            </ThemedText>
+          ))}
+          {result.leveledUp ? (
+            <ThemedText type="smallBold">Level up — {result.title ?? result.level}</ThemedText>
+          ) : null}
         </View>
       ) : null}
 
