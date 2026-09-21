@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./apps/mobile/src/*"],
+      "@/assets/*": ["./apps/mobile/assets/*"]
+    }
+  },
+  "include": ["apps/mobile/src/**/*.ts", "apps/mobile/src/**/*.tsx"]
+}

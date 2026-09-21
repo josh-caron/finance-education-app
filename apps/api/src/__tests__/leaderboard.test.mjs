@@ -87,6 +87,38 @@ test('weekly totals include Monday and Sunday and exclude both adjacent weeks', 
   assert.equal(query('b', 'weekly').currentUser, null);
 });
 
+test('empty board, one learner, and a lone caller have no invented neighbors', (t) => {
+  const { add, query } = fixture(t);
+  const empty = query('nobody');
+  assert.equal(empty.totalLearners, 0);
+  assert.deepEqual(empty.entries, []);
+  assert.equal(empty.currentUser, null);
+
+  add('only', 40, 'Only');
+  const solo = query('only');
+  assert.equal(solo.totalLearners, 1);
+  assert.equal(solo.entries.length, 1);
+  assert.equal(solo.currentUser.rank, 1);
+  assert.deepEqual(solo.nearby, []);
+});
+
+test('weekly ties share ranks and ignore zero daily XP', (t) => {
+  const { db, add, query } = fixture(t);
+  add('a', 1, 'A');
+  add('b', 1, 'B');
+  add('idle', 500, 'Idle');
+  const insert = db.prepare('INSERT INTO daily_activity VALUES (?, ?, ?)');
+  insert.run('a', '2026-09-08', 10);
+  insert.run('b', '2026-09-09', 10);
+  insert.run('idle', '2026-09-08', 0);
+  const result = query('a', 'weekly');
+  assert.deepEqual(
+    result.entries.map((e) => e.rank),
+    [1, 1],
+  );
+  assert.equal(result.totalLearners, 2);
+});
+
 test('week selection uses UTC and handles Monday, year rollover and leap day', () => {
   assert.deepEqual(leaderboardWeek(new Date('2026-09-14T00:00:00Z')), {
     start: '2026-09-14',

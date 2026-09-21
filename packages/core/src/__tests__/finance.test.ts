@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   bondPrice,
+  cashRemainder,
   compoundBalance,
   creditUtilization,
+  depositsToReach,
   futureValueOfAnnuity,
   monthlyLoanPayment,
+  monthsOfExpensesCovered,
   realReturn,
   yearsToDouble,
   yieldToMaturity,
@@ -49,5 +52,18 @@ describe('finance helpers', () => {
   it('reports credit utilization as a percentage', () => {
     expect(creditUtilization(300, 1000)).toBe(30);
     expect(creditUtilization(300, 0)).toBe(0);
+  });
+
+  it('subtracts same-period expenses from income', () => {
+    expect(cashRemainder(1800, 1350)).toBe(450);
+    expect(cashRemainder(12, 40, 35)).toBe(-63);
+  });
+
+  it('counts whole deposits and months of expenses covered', () => {
+    expect(depositsToReach(500, 100, 75)).toBe(6);
+    expect(depositsToReach(360, 0, 40)).toBe(9);
+    expect(depositsToReach(100, 100, 25)).toBe(0);
+    expect(monthsOfExpensesCovered(3600, 1200)).toBe(3);
+    expect(monthsOfExpensesCovered(100, 0)).toBe(0);
   });
 });

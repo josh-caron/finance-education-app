@@ -30,6 +30,18 @@ describe('course integrity', () => {
   it('gives every unit a distinct position in the tree', () => {
     const orders = units.map((unit) => unit.order);
     expect(new Set(orders).size).toBe(orders.length);
+    expect(units.map((unit) => unit.id)).toEqual([
+      'budgeting-saving',
+      'banking-emergency',
+      'money-basics',
+    ]);
+  });
+
+  it('locks each later unit on the previous unit in tree order', () => {
+    expect(units[0]!.prerequisites).toEqual([]);
+    for (let index = 1; index < units.length; index += 1) {
+      expect(units[index]!.prerequisites, units[index]!.id).toEqual([units[index - 1]!.id]);
+    }
   });
 
   it('points every multiple-choice answer key at a real choice', () => {
@@ -55,6 +67,13 @@ describe('course integrity', () => {
       if (exercise.kind !== 'computed_answer') continue;
       expect(Number.isFinite(exercise.answer), exercise.id).toBe(true);
       expect(exercise.tolerance.value, exercise.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('teaches every exercise with an explanation and a hint', () => {
+    for (const exercise of exercises) {
+      expect(exercise.explanation?.length, exercise.id).toBeGreaterThan(20);
+      expect(exercise.hint?.length, exercise.id).toBeGreaterThan(8);
     }
   });
 

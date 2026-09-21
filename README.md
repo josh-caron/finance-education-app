@@ -55,6 +55,22 @@ the exercises. These references support this module; they are not a source audit
 of the separate starter lessons on compounding and credit utilization.
 
 See [the module notes](docs/budgeting-saving-module.md) for scope and review steps.
+The full source table, including banking and deposit-insurance links, is in
+[docs/research-sources.md](docs/research-sources.md).
+
+The **Banking and Emergency Savings** module follows that unit. Background
+concepts come from:
+
+- [An essential guide to building an emergency fund](https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/)
+  and CFPB Your Money, Your Goals savings tools: start with a small reserve
+  (often $500, then $1,000) sized to your own costs.
+- [FDIC deposit insurance](https://www.fdic.gov/deposit-insurance): eligible
+  deposits at insured banks are covered per depositor, per institution, per
+  ownership category, up to a limit set by law. Lessons state any limit they
+  use in the scenario rather than treating it as an unchanging fact.
+
+Accessed September 2026. Examples are original. Fee amounts in exercises are
+scenario numbers, not a national schedule.
 
 ## Getting started
 

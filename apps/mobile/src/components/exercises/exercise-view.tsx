@@ -69,6 +69,12 @@ export function ExerciseView({
         {exercise.prompt}
       </ThemedText>
 
+      {exercise.kind !== 'computed_answer' && exercise.hint ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          Hint: {exercise.hint}
+        </ThemedText>
+      ) : null}
+
       {exercise.kind === 'multiple_choice' && draft.kind === 'multiple_choice' ? (
         <MultipleChoice
           exercise={exercise}

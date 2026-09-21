@@ -19,9 +19,9 @@ The examples are original. Background concepts follow these CFPB resources:
 ## Local preview and review
 
 Run `pnpm db:seed:local` to publish authored content to the local database, then
-restart or refresh the app. The course should contain two units, six lessons, and
-25 exercises. Seeding replaces course rows; use a disposable local learner because
-the current seed script can cascade-delete lesson progress. Do not seed production
+restart or refresh the app. After the banking module, the course should contain
+three units, ten lessons, and 45 exercises. Seeding upserts course rows by id.
+Removed exercise ids still cascade-delete their attempts. Do not seed production
 as part of this preview.
 
 Review all four lessons in order on web and a native target. Check a wrong answer

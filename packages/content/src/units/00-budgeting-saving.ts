@@ -1,4 +1,4 @@
-import type { Unit } from '@fin/core';
+import { cashRemainder, depositsToReach, type Unit } from '@fin/core';
 
 /** Backlog 4. Stable IDs keep authored content linked to learner progress. */
 export const budgetingSaving: Unit = {
@@ -25,6 +25,7 @@ export const budgetingSaving: Unit = {
             { id: 'deductions', label: '$400' },
           ],
           correctChoiceId: 'net',
+          hint: 'Take-home pay is what you actually receive after deductions.',
           explanation:
             'The $2,000 deposit is available after payroll deductions. The $2,400 is gross pay; $400 was deducted.',
         },
@@ -33,7 +34,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'This month you receive $1,800 in take-home pay and spend $1,350. How many dollars remain before allocating savings?',
-          answer: 450,
+          answer: cashRemainder(1800, 1350),
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: "Subtract this month's spending from this month's take-home income.",
@@ -45,7 +46,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'Your only expenses this month are rent $800, groceries $240, transport $90, and phone service $40. What is your total spending?',
-          answer: 1170,
+          answer: cashRemainder(800 + 240 + 90 + 40),
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: 'Add the four expenses.',
@@ -63,6 +64,7 @@ export const budgetingSaving: Unit = {
             { id: 'gap', label: 'Spending exceeds income by $150' },
           ],
           correctChoiceId: 'gap',
+          hint: 'Compare the two monthly totals; a negative difference is a shortfall.',
           explanation:
             '$1,600 - $1,750 = -$150. The plan needs an adjustment or another identified source of funds.',
         },
@@ -77,6 +79,7 @@ export const budgetingSaving: Unit = {
             { id: 'middle', label: '$1,500 income; $1,350 expenses' },
           ],
           correctOrder: ['low', 'middle', 'high'],
+          hint: 'Compute income minus expenses for each plan, then sort those balances.',
           explanation:
             'The balances are -$100, $150, and $400. Compare the difference, not income alone.',
         },
@@ -99,6 +102,7 @@ export const budgetingSaving: Unit = {
             { id: 'game', label: 'A new video game' },
           ],
           correctChoiceId: 'bus',
+          hint: 'Ask which purchase lets Sam meet a basic work responsibility.',
           explanation:
             'The fare enables Sam to get to work. Classification depends on the situation, not simply the category of purchase.',
         },
@@ -113,6 +117,7 @@ export const budgetingSaving: Unit = {
             { id: 'income', label: 'Income' },
           ],
           correctChoiceId: 'want',
+          hint: 'The current phone already meets the requirement; appearance is extra.',
           explanation:
             'Basic phone access may be necessary, but this upgrade adds a preference rather than meeting an unmet requirement.',
         },
@@ -121,7 +126,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'You choose to pause an optional $15 streaming subscription and skip two $12 takeout orders this month, using groceries already budgeted for instead. How much spending do you avoid?',
-          answer: 39,
+          answer: cashRemainder(15 + 12 + 12),
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: 'Add the subscription cost to two takeout orders.',
@@ -142,6 +147,7 @@ export const budgetingSaving: Unit = {
             },
           ],
           correctChoiceId: 'context',
+          hint: 'The same product can be a need or a want depending on what it is used for.',
           explanation:
             'Evaluate what the service enables and what level is required. The same expense can serve different purposes for different people.',
         },
@@ -156,6 +162,7 @@ export const budgetingSaving: Unit = {
             { id: 'tickets', label: 'Skip two $30 movie outings' },
           ],
           correctOrder: ['subscription', 'takeout', 'tickets'],
+          hint: 'Multiply each optional item by how many times you skip it this month.',
           explanation:
             'The changes avoid $10, $42, and $60 respectively. This compares amounts, not which choice everyone should make.',
         },
@@ -177,6 +184,7 @@ export const budgetingSaving: Unit = {
             { id: 'guarantee', label: 'A guarantee that no unexpected expense will happen' },
           ],
           correctChoiceId: 'plan',
+          hint: 'A budget assigns expected income; it does not freeze your life in place.',
           explanation:
             'A budget makes choices visible. It can include enjoyment and should be revisited when circumstances change.',
         },
@@ -185,7 +193,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'Your monthly take-home income is $2,000. You plan $1,300 for essentials and $450 for other spending. How much remains to allocate to savings?',
-          answer: 250,
+          answer: cashRemainder(2000, 1300, 450),
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: 'Income minus both spending categories equals the remaining allocation.',
@@ -197,7 +205,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'Income is $1,800. Your plan assigns $1,200 to essentials, $500 to flexible spending, and $200 to savings. If essentials and savings stay fixed, by how many dollars must flexible spending decrease to balance the plan?',
-          answer: 100,
+          answer: cashRemainder(1200 + 500 + 200, 1800),
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: 'Find the amount by which all three allocations exceed income.',
@@ -218,6 +226,7 @@ export const budgetingSaving: Unit = {
             { id: 'ignore', label: 'Bills do not belong in a budget' },
           ],
           correctChoiceId: 'timing',
+          hint: 'Ask whether cash is on hand on the due date, not only whether the month totals.',
           explanation:
             'There is a $300 shortfall on the due date. Track when money arrives and bills are due, not only monthly totals.',
         },
@@ -236,6 +245,7 @@ export const budgetingSaving: Unit = {
             },
           ],
           correctOrder: ['gather', 'allocate', 'adjust', 'review'],
+          hint: 'You cannot allocate or review before you know the numbers.',
           explanation:
             'Gather the inputs, draft the plan, balance it, then use actual results to inform the next plan.',
         },
@@ -257,6 +267,7 @@ export const budgetingSaving: Unit = {
             { id: 'specific', label: 'Set aside $600 for a course fee in six months' },
           ],
           correctChoiceId: 'specific',
+          hint: 'Look for both a dollar target and a date.',
           explanation:
             'An amount and deadline let you calculate a periodic contribution and check whether it fits your budget.',
         },
@@ -265,7 +276,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'You need $600 in six months and already have $120 saved for this goal. With no interest, fees, or withdrawals, how much must you save each month in six equal deposits?',
-          answer: 80,
+          answer: cashRemainder(600, 120) / 6,
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: 'Subtract existing savings from the target, then divide by six.',
@@ -277,7 +288,7 @@ export const budgetingSaving: Unit = {
           kind: 'computed_answer',
           prompt:
             'Your goal is $500 and you have $100 saved. You add $75 at the end of each month, with no interest, fees, or withdrawals. How many monthly deposits are needed to reach at least $500? Enter a whole number.',
-          answer: 6,
+          answer: depositsToReach(500, 100, 75),
           format: 'number',
           tolerance: { type: 'absolute', value: 0.01 },
           hint: 'Divide the $400 gap by $75 and round up to a whole deposit.',
@@ -295,6 +306,7 @@ export const budgetingSaving: Unit = {
             { id: 'same', label: 'Save $80 for four months and assume it totals $480' },
           ],
           correctChoiceId: 'extend',
+          hint: 'The monthly amount that fits the budget times a longer timeline can still hit $480.',
           explanation:
             '6 x $80 = $480. Four deposits of $80 would total only $320. Extending the timeline is one way to make this example feasible.',
         },
@@ -309,6 +321,7 @@ export const budgetingSaving: Unit = {
             { id: 'medium', label: '$300 target' },
           ],
           correctOrder: ['small', 'medium', 'large'],
+          hint: 'Divide each target by the $60 deposit and count whole deposits.',
           explanation: '$120 / $60 = 2 deposits; $300 / $60 = 5; $480 / $60 = 8.',
         },
       ],

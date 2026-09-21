@@ -49,7 +49,7 @@ export default function LearnScreen() {
       ) : null}
 
       {unitsQuery.data?.units.map((unit) => (
-        <UnitCard key={unit.id} unit={unit} />
+        <UnitCard key={unit.id} unit={unit} units={unitsQuery.data.units} />
       ))}
     </Screen>
   );
