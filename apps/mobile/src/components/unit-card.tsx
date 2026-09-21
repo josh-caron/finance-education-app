@@ -18,9 +18,7 @@ export function UnitCard({ unit, units }: { unit: UnitSummary; units: UnitSummar
       style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
     >
       <ThemedText type="smallBold" themeColor={unit.unlocked ? 'brand' : 'locked'}>
-        {unit.unlocked
-          ? `Unit ${unit.order}`
-          : `Locked · finish ${requiredTitles.join(', ')}`}
+        {unit.unlocked ? `Unit ${unit.order}` : `Locked · finish ${requiredTitles.join(', ')}`}
       </ThemedText>
 
       <ThemedText type="default" style={styles.title}>
