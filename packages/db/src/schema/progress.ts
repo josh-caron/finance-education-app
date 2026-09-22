@@ -20,6 +20,10 @@ export const learnerProfiles = sqliteTable('learner_profiles', {
   longestStreak: integer('longest_streak').notNull().default(0),
   /** YYYY-MM-DD in the learner's local time, so streaks follow their calendar. */
   lastActiveDay: text('last_active_day'),
+  /** Chosen by the learner. Hidden learners are left out of every leaderboard ranking. */
+  hideFromLeaderboard: integer('hide_from_leaderboard', { mode: 'boolean' })
+    .notNull()
+    .default(false),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),

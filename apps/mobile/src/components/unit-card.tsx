@@ -12,13 +12,16 @@ export function UnitCard({ unit, units }: { unit: UnitSummary; units: UnitSummar
   const requiredTitles = unit.prerequisites.map(
     (id) => units.find((item) => item.id === id)?.title ?? id,
   );
+  // `order` is a sort key and starts at 0, so number units by their position in
+  // the tree instead. The API already returns them in tree order.
+  const position = units.findIndex((item) => item.id === unit.id) + 1;
 
   return (
     <View
       style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
     >
       <ThemedText type="smallBold" themeColor={unit.unlocked ? 'brand' : 'locked'}>
-        {unit.unlocked ? `Unit ${unit.order}` : `Locked · finish ${requiredTitles.join(', ')}`}
+        {unit.unlocked ? `Unit ${position}` : `Locked · finish ${requiredTitles.join(', ')}`}
       </ThemedText>
 
       <ThemedText type="default" style={styles.title}>

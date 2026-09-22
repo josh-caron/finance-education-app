@@ -18,17 +18,22 @@ export interface RankedLearner {
   total: number;
 }
 
-/** Rank before limiting; bind all values; return at most 15 rows in one snapshot. */
+/**
+ * Rank before limiting; bind all values; return at most 15 rows in one snapshot.
+ * Learners who chose to hide are left out before ranking, so they take no rank
+ * and nobody else's rank has a gap where they would have been.
+ */
 export function leaderboardQuery(period: LeaderboardPeriod) {
   const scores =
     period === 'weekly'
       ? `SELECT u.id AS userId, u.name, SUM(a.xp_earned) AS xp
        FROM daily_activity a JOIN user u ON u.id = a.user_id
-       WHERE a.day >= ? AND a.day < ?
+       LEFT JOIN learner_profiles p ON p.user_id = u.id
+       WHERE a.day >= ? AND a.day < ? AND coalesce(p.hide_from_leaderboard, 0) = 0
        GROUP BY u.id, u.name HAVING SUM(a.xp_earned) > 0`
       : `SELECT u.id AS userId, u.name, p.total_xp AS xp
        FROM learner_profiles p JOIN user u ON u.id = p.user_id
-       WHERE p.total_xp > 0`;
+       WHERE p.total_xp > 0 AND p.hide_from_leaderboard = 0`;
   return `WITH scores AS (${scores}), ranked AS (
     SELECT *, RANK() OVER (ORDER BY xp DESC) AS rank,
       ROW_NUMBER() OVER (ORDER BY xp DESC, userId ASC) AS position,

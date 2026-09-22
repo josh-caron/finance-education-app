@@ -204,7 +204,9 @@ npx wrangler d1 execute fin-edu-db --remote --command "SELECT key, count, expire
 ```
 
 _Why you would:_ someone reports being locked out, or you want to see whether an
-endpoint is being hammered. Keys are `scope:window:ip`.
+endpoint is being hammered. Keys are `scope:window:ip`. Sign-up also has one shared
+counter for everyone, `sign-up:3600:*all*`; if every sign-up is being refused, check that
+one first.
 
 Clear a specific caller, for instance to unblock a demo:
 
@@ -223,6 +225,31 @@ npx wrangler dev --test-scheduled
 ```
 
 then `curl "http://localhost:8787/__scheduled"`.
+
+## Email
+
+Verification and password-reset emails go out through Resend, but only once both
+`RESEND_API_KEY` and `EMAIL_FROM` are set. Until then nothing is sent: `wrangler dev`
+prints each email, link included, so reset can be tested locally; a deployed Worker logs
+only that an email was skipped, because a reset link in logs is a working credential.
+
+To turn it on:
+
+1. Buy the project domain.
+2. In Resend, add the domain and create the DNS records it lists at your registrar.
+   Wait for Resend to show the domain as verified.
+3. Create an API key with sending access only, then store it:
+
+   ```bash
+   npx wrangler secret put RESEND_API_KEY
+   ```
+
+4. Add the sender to `vars` in `wrangler.jsonc`, on the verified domain, for example
+   `"EMAIL_FROM": "Finance Education App <noreply@your-domain>"`, then deploy.
+5. Sign up with an address you can read and check the verification email arrives. If it
+   does not, `npx wrangler tail` shows Resend's reason as `Resend rejected an email`.
+
+The free tier sends 100 emails a day across everyone; see `docs/known-issues.md`.
 
 ## The API
 

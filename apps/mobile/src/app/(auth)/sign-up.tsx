@@ -1,3 +1,4 @@
+import { MAX_DISPLAY_NAME_LENGTH } from '@fin/core';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -47,7 +48,14 @@ export default function SignUpScreen() {
     <Screen>
       <ThemedText type="subtitle">Create your account</ThemedText>
 
-      <TextField label="Name" value={name} onChangeText={setName} autoComplete="name" />
+      <TextField
+        label="Name"
+        value={name}
+        onChangeText={setName}
+        autoComplete="name"
+        maxLength={MAX_DISPLAY_NAME_LENGTH}
+        hint="Shown to other learners on the leaderboard"
+      />
 
       <TextField
         label="Email"

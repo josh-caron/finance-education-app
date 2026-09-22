@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   decideRateLimit,
+  GLOBAL_CLIENT,
+  globalRateLimitRules,
   rateLimitKey,
   rateLimitRules,
   scopeForPath,
@@ -72,16 +74,32 @@ describe('scopeForPath', () => {
 });
 
 describe('rateLimitRules', () => {
-  it('makes account creation the tightest rule, tied only with sending email', () => {
+  it('keeps sign-up per address tighter than everything except sending email', () => {
     const perSecond = (r: RateLimitRule) => r.max / r.window;
     for (const [name, other] of Object.entries(rateLimitRules)) {
-      if (name === 'sign-up') continue;
-      // Both create something with a real cost: a permanent row, or an email.
-      if (name === 'email') {
-        expect(perSecond(rateLimitRules['sign-up']), name).toBeLessThanOrEqual(perSecond(other));
-        continue;
-      }
+      if (name === 'sign-up' || name === 'email') continue;
       expect(perSecond(rateLimitRules['sign-up']), name).toBeLessThan(perSecond(other));
+    }
+  });
+
+  it('lets a class sign up together from one campus address', () => {
+    expect(rateLimitRules['sign-up'].max).toBeGreaterThanOrEqual(30);
+    expect(rateLimitRules['sign-up'].window).toBe(3600);
+  });
+
+  it('bounds sign-up across all addresses with a global cap', () => {
+    const global = globalRateLimitRules['sign-up']!;
+    expect(global.window).toBe(rateLimitRules['sign-up'].window);
+    // Loose enough for several classes at once, far below what a flood would need.
+    expect(global.max).toBeGreaterThan(rateLimitRules['sign-up'].max);
+    expect(global.max).toBeLessThanOrEqual(500);
+  });
+
+  it('never lets the global key collide with a real address', () => {
+    for (const address of ['1.2.3.4', '::1', '2001:db8::1', 'local']) {
+      expect(rateLimitKey('sign-up', GLOBAL_CLIENT, 3600)).not.toBe(
+        rateLimitKey('sign-up', address, 3600),
+      );
     }
   });
 

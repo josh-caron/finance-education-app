@@ -1,0 +1,1 @@
+ALTER TABLE `learner_profiles` ADD `hide_from_leaderboard` integer DEFAULT false NOT NULL;

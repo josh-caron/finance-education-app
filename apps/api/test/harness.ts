@@ -102,6 +102,7 @@ export async function createHarness() {
       body,
       cookie,
       origin = BASE,
+      ip,
       env: overrides,
       settle: wait = true,
     }: RequestOptions = {},
@@ -109,6 +110,8 @@ export async function createHarness() {
     const headers: Record<string, string> = { Origin: origin };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (cookie) headers.Cookie = cookie;
+    // Cloudflare sets this on every request; the rate limiter keys on it.
+    if (ip) headers['CF-Connecting-IP'] = ip;
 
     const response = await worker.fetch(
       new Request(`${BASE}${path}`, {
@@ -243,6 +246,8 @@ interface RequestOptions {
   cookie?: string;
   /** Origin header to send. Defaults to the test base URL. */
   origin?: string;
+  /** Caller address, as Cloudflare would report it. Defaults to the local test address. */
+  ip?: string;
   env?: Partial<Bindings>;
   /** Wait for background tasks such as emails before returning. Defaults to true. */
   settle?: boolean;

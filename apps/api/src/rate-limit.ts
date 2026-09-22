@@ -1,8 +1,11 @@
+import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { lt, sql } from 'drizzle-orm';
 import { rateLimits, type Database } from '@fin/db';
 import {
   decideRateLimit,
+  GLOBAL_CLIENT,
+  globalRateLimitRules,
   rateLimitKey,
   rateLimitRules,
   scopeForPath,
@@ -92,13 +95,27 @@ export const rateLimit = createMiddleware<AppEnv>(async (c, next) => {
   c.header('RateLimit-Limit', String(rule.max));
   c.header('RateLimit-Remaining', String(decision.remaining));
 
-  if (!decision.allowed) {
-    c.header('Retry-After', String(decision.retryAfter));
-    return c.json({ error: 'Too many requests', retryAfter: decision.retryAfter }, 429);
+  if (!decision.allowed) return tooManyRequests(c, decision.retryAfter);
+
+  // Only requests the per-address rule let through count against the shared
+  // cap, so one caller hammering their own limit cannot use up everyone's.
+  const globalRule = globalRateLimitRules[scope];
+  if (globalRule) {
+    const globalDecision = await consumeRateLimit(
+      c.get('db'),
+      rateLimitKey(scope, GLOBAL_CLIENT, globalRule.window),
+      globalRule,
+    );
+    if (!globalDecision.allowed) return tooManyRequests(c, globalDecision.retryAfter);
   }
 
   await next();
 });
+
+function tooManyRequests(c: Context<AppEnv>, retryAfter: number) {
+  c.header('Retry-After', String(retryAfter));
+  return c.json({ error: 'Too many requests', retryAfter }, 429);
+}
 
 /**
  * Drops windows that have already elapsed. Called from the scheduled handler;

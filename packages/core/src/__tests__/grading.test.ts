@@ -105,6 +105,10 @@ describe('parseNumericAnswer', () => {
     ['7 %', 7],
     ['-12.5', -12.5],
     ['-$12.50', -12.5],
+    ['$-12.50', -12.5],
+    ['$ - 63', -63],
+    ['\u221263', -63],
+    ['-\u0024\u0036\u0033', -63],
     ['.5', 0.5],
     ['0', 0],
     [' 7% ', 7],
@@ -131,6 +135,11 @@ describe('parseNumericAnswer', () => {
     '.',
     '-',
     '   ',
+    '$--63',
+    '--63',
+    '\u2212\u221263',
+    '-$-63',
+    '$-',
   ])('rejects malformed or unsupported input %s', (input) => {
     expect(parseNumericAnswer(input)).toBeNull();
   });

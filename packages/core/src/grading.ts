@@ -97,8 +97,12 @@ export function parseNumericAnswer(
   // Validate before removing formatting: "1,2" and "1 2" must not become 12.
   // Spaces around $ or % are formatting, but spaces inside the digits are not
   // ("1 2" must stay invalid). A trailing decimal is treated as a whole number.
+  // A sign may come before or after the dollar sign ("-$63" and "$-63"), and
+  // the typographic minus (U+2212) some keyboards insert counts as a hyphen.
   const text = input
     .trim()
+    .replace(/\u2212/g, '-')
+    .replace(/^\$\s*([+-])\s*/, '$1$')
     .replace(/^([+-])\s+/, '$1')
     .replace(/^([+-]?)\$\s*/, '$1$')
     .replace(/\s+%$/, '%');

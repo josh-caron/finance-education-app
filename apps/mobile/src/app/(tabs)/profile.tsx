@@ -1,8 +1,8 @@
 import { toDayKey } from '@fin/core';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { LevelRing } from '@/components/level-ring';
@@ -12,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { XpBar } from '@/components/xp-bar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiPatch } from '@/lib/api';
 import type { LearnerProfile } from '@/lib/api-types';
 import { signOut, useSession } from '@/lib/auth-client';
 
@@ -46,6 +46,16 @@ export default function ProfileScreen() {
       setSigningOut(false);
     }
   }
+
+  const queryClient = useQueryClient();
+  const visibility = useMutation({
+    mutationFn: (showOnLeaderboard: boolean) =>
+      apiPatch<{ showOnLeaderboard: boolean }>('/api/progress/me', { showOnLeaderboard }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      void queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    },
+  });
 
   const profile = profileQuery.data;
   const completed = profile?.lessons.filter((lesson) => lesson.status === 'completed').length ?? 0;
@@ -96,6 +106,26 @@ export default function ProfileScreen() {
             currentStreak={profile.currentStreak}
             health={profile.streakHealth}
           />
+
+          <View style={styles.setting}>
+            <View style={styles.settingText}>
+              <ThemedText type="smallBold">Show me on the leaderboard</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Other learners see your name and XP. Turn this off to stay private.
+              </ThemedText>
+            </View>
+            <Switch
+              accessibilityLabel="Show me on the leaderboard"
+              value={visibility.isPending ? visibility.variables : profile.showOnLeaderboard}
+              onValueChange={(value) => visibility.mutate(value)}
+              disabled={visibility.isPending}
+            />
+          </View>
+          {visibility.isError ? (
+            <ThemedText type="small" themeColor="danger">
+              Could not save that setting. Please try again.
+            </ThemedText>
+          ) : null}
         </>
       ) : null}
 
@@ -140,4 +170,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   statValue: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  setting: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  settingText: { flex: 1, gap: Spacing.one },
 });

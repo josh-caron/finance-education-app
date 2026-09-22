@@ -29,6 +29,13 @@
       "when": 1789587063064,
       "tag": "0003_lucky_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790088668573,
+      "tag": "0004_fast_emma_frost",
+      "breakpoints": true
     }
   ]
 }

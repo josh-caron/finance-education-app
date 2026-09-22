@@ -50,7 +50,12 @@ export function decideRateLimit(
  * that a real learner will never see it.
  */
 export const rateLimitRules = {
-  'sign-up': { max: 5, window: 3600 },
+  /**
+   * Per address. Campus Wi-Fi can put a whole room behind one public IP, so this
+   * is sized for a class signing up together at the showcase. The global cap
+   * below is what bounds abuse spread across many addresses.
+   */
+  'sign-up': { max: 30, window: 3600 },
   'sign-in': { max: 10, window: 300 },
   /**
    * Endpoints that send email on request: resending verification and asking for
@@ -68,6 +73,21 @@ export const rateLimitRules = {
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitScope = keyof typeof rateLimitRules;
+
+/**
+ * Caps shared by every caller, checked after the per-address rule passes. A
+ * per-address limit alone cannot stop someone spreading requests across many
+ * addresses, and a sign-up both writes a permanent row and sends an email.
+ */
+export const globalRateLimitRules: Partial<Record<RateLimitScope, RateLimitRule>> = {
+  'sign-up': { max: 300, window: 3600 },
+};
+
+/**
+ * Client id for global counters. Contains characters no IPv4 or IPv6 address
+ * can, so it can never collide with a real caller's key.
+ */
+export const GLOBAL_CLIENT = '*all*';
 
 /**
  * Picks the scope for a request path. Returns null when a path should not be

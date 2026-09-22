@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -24,6 +24,7 @@ import {
 } from '@fin/core';
 
 import { requireAuth } from '../middleware/session';
+import { lockingPrerequisites } from '../unlocks';
 import type { AppEnv } from '../types';
 
 export const progressRoutes = new Hono<AppEnv>();
@@ -113,6 +114,7 @@ progressRoutes.get('/me', async (c) => {
   return c.json({
     totalXp: profile.totalXp,
     ...levelForXp(profile.totalXp),
+    showOnLeaderboard: !profile.hideFromLeaderboard,
     currentStreak: profile.currentStreak,
     longestStreak: profile.longestStreak,
     lastActiveDay: profile.lastActiveDay,
@@ -134,6 +136,32 @@ progressRoutes.get('/me', async (c) => {
       xpEarned: row.xpEarned,
     })),
   });
+});
+
+const settingsSchema = z
+  .object({
+    /** False keeps the learner out of every leaderboard ranking. */
+    showOnLeaderboard: z.boolean(),
+  })
+  .strict();
+
+/** Updates the caller's own settings. */
+progressRoutes.patch('/me', async (c) => {
+  const db = c.get('db');
+  const user = c.get('user')!;
+
+  const parsed = settingsSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid settings', issues: parsed.error.issues }, 400);
+  }
+
+  await getOrCreateProfile(db, user.id);
+  await db
+    .update(learnerProfiles)
+    .set({ hideFromLeaderboard: !parsed.data.showOnLeaderboard, updatedAt: new Date() })
+    .where(eq(learnerProfiles.userId, user.id));
+
+  return c.json({ showOnLeaderboard: parsed.data.showOnLeaderboard });
 });
 
 /**
@@ -161,6 +189,16 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
 
   if (!exercise) {
     return c.json({ error: 'Exercise not found in this lesson' }, 404);
+  }
+
+  const [owningLesson] = await db
+    .select({ unitId: lessons.unitId })
+    .from(lessons)
+    .where(eq(lessons.id, lessonId))
+    .limit(1);
+  const locked = await lockingPrerequisites(db, user.id, owningLesson!.unitId);
+  if (locked.length > 0) {
+    return lockedResponse(c, locked);
   }
 
   const [progressRow] = await db
@@ -262,6 +300,11 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
   const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId)).limit(1);
   if (!lesson) {
     return c.json({ error: 'Lesson not found' }, 404);
+  }
+
+  const locked = await lockingPrerequisites(db, user.id, lesson.unitId);
+  if (locked.length > 0) {
+    return lockedResponse(c, locked);
   }
 
   const [existing] = await db
@@ -389,6 +432,14 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
 });
 
 type Db = AppEnv['Variables']['db'];
+
+/**
+ * Locked units are enforced here, not only hidden in the UI: otherwise a learner
+ * calling the API directly could earn XP and leaderboard rank from them.
+ */
+function lockedResponse(c: Context<AppEnv>, requires: string[]) {
+  return c.json({ error: 'This lesson is locked', requires }, 403);
+}
 
 async function getOrCreateProfile(db: Db, userId: string) {
   const [existing] = await db

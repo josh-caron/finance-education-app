@@ -1,4 +1,4 @@
-import type { LeaderboardEntry, LeaderboardPeriod, LeaderboardResult } from '@fin/core';
+import type { LeaderboardEntry, LeaderboardPeriod, LeaderboardResponse } from '@fin/core';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -18,7 +18,7 @@ export default function LeaderboardScreen() {
   const [period, setPeriod] = useState<LeaderboardPeriod>('all-time');
   const query = useQuery({
     queryKey: ['leaderboard', session?.user.id, period],
-    queryFn: () => apiFetch<LeaderboardResult>(`/api/leaderboard?period=${period}`),
+    queryFn: () => apiFetch<LeaderboardResponse>(`/api/leaderboard?period=${period}`),
     enabled: Boolean(session?.user.id),
     refetchInterval: 60_000,
   });
@@ -75,9 +75,11 @@ export default function LeaderboardScreen() {
           ) : null}
           <View style={[styles.summary, { backgroundColor: theme.successSurface }]}>
             <ThemedText type="smallBold">
-              {query.data.currentUser
-                ? `Your rank: ${query.data.currentUser.rank} · ${query.data.currentUser.xp.toLocaleString()} XP`
-                : 'Earn XP from exercises to join this leaderboard.'}
+              {query.data.hidden
+                ? "You're hidden from the leaderboard. You can change this on your profile."
+                : query.data.currentUser
+                  ? `Your rank: ${query.data.currentUser.rank} · ${query.data.currentUser.xp.toLocaleString()} XP`
+                  : 'Earn XP from exercises to join this leaderboard.'}
             </ThemedText>
             <ThemedText type="small">
               {query.data.totalLearners} learners with XP{period === 'weekly' ? ' this week' : ''}

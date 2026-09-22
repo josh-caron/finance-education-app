@@ -426,6 +426,72 @@ describe('POST /api/progress/lessons/:lessonId/complete', () => {
   });
 });
 
+describe('locked units', () => {
+  const advanced = correctAnswers['advanced.one'][0];
+
+  it('refuses answers in a unit whose prerequisite is unfinished, and pays nothing', async () => {
+    const cookie = await h.signUp();
+
+    const response = await h.attempt(cookie, 'advanced.one', advanced, DAY1);
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ requires: ['basics'] });
+    expect((await me(cookie)).totalXp).toBe(0);
+  });
+
+  it('refuses to complete a locked lesson', async () => {
+    const cookie = await h.signUp();
+    expect((await h.complete(cookie, 'advanced.one', DAY1)).status).toBe(403);
+  });
+
+  it('stays locked until every lesson in the prerequisite is done', async () => {
+    const cookie = await h.signUp();
+    await h.answerAll(cookie, 'basics.one', DAY1);
+    await h.complete(cookie, 'basics.one', DAY1);
+
+    expect((await h.attempt(cookie, 'advanced.one', advanced, DAY1)).status).toBe(403);
+
+    await h.answerAll(cookie, 'basics.two', DAY1);
+    await h.complete(cookie, 'basics.two', DAY1);
+
+    const opened = await h.attempt(cookie, 'advanced.one', advanced, DAY1);
+    expect(opened.status).toBe(200);
+    expect(await json<AttemptBody>(opened)).toMatchObject({ correct: true, xpAwarded: 15 });
+  });
+
+  it("does not let one learner's progress unlock another's units", async () => {
+    const finisher = await h.signUp();
+    for (const lesson of ['basics.one', 'basics.two'] as const) {
+      await h.answerAll(finisher, lesson, DAY1);
+      await h.complete(finisher, lesson, DAY1);
+    }
+
+    const newcomer = await h.signUp();
+    expect((await h.attempt(newcomer, 'advanced.one', advanced, DAY1)).status).toBe(403);
+  });
+
+  it('agrees with the skill tree about what is unlocked', async () => {
+    const cookie = await h.signUp();
+    const tree = async () =>
+      (
+        (await (await h.request('/api/content/units', { cookie })).json()) as {
+          units: { id: string; unlocked: boolean }[];
+        }
+      ).units.find((unit) => unit.id === 'advanced')!.unlocked;
+
+    expect(await tree()).toBe(false);
+    expect((await h.attempt(cookie, 'advanced.one', advanced, DAY1)).status).toBe(403);
+
+    for (const lesson of ['basics.one', 'basics.two'] as const) {
+      await h.answerAll(cookie, lesson, DAY1);
+      await h.complete(cookie, lesson, DAY1);
+    }
+
+    expect(await tree()).toBe(true);
+    expect((await h.attempt(cookie, 'advanced.one', advanced, DAY1)).status).toBe(200);
+  });
+});
+
 describe('streaks', () => {
   it('extends across consecutive days and reports its health from the learner calendar', async () => {
     const cookie = await h.signUp();

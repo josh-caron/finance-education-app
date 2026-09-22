@@ -88,6 +88,17 @@ React Native has no cookie jar, so `@better-auth/expo` stores the session token 
 `src/lib/auth-client.web.ts` drops the plugin and lets the browser handle the cookie.
 Metro picks the right file by extension. The two files must export the same names.
 
+### Locked units are enforced by the API
+
+A unit opens once every lesson in each of its prerequisite units is completed. The rule is
+`isUnitUnlocked` in `@fin/core`, and the API applies it in two places: the skill tree reports
+it, and the answer and completion routes refuse a locked lesson with a 403. Hiding locked
+units in the UI alone would let anyone calling the API directly earn XP and leaderboard rank
+from them.
+
+Reading a locked lesson is still allowed, so a learner can preview what comes next. Only
+earning from it is blocked.
+
 ### Rate limiting is a single SQL statement
 
 Counters are kept in D1 and advanced by one
@@ -138,6 +149,7 @@ attempt log.
 | GET    | `/api/content/units`                       | optional | Skill tree, with progress if signed in |
 | GET    | `/api/content/lessons/:lessonId`           | optional | Lesson with answer keys stripped       |
 | GET    | `/api/progress/me`                         | required | XP, level, streak, lesson statuses     |
+| PATCH  | `/api/progress/me`                         | required | Settings: `showOnLeaderboard`          |
 | POST   | `/api/progress/lessons/:lessonId/attempts` | required | Grade one submission                   |
 | POST   | `/api/progress/lessons/:lessonId/complete` | required | Award XP, advance streak               |
 | GET    | `/api/leaderboard?period=all-time\|weekly` | required | Top 10 and ranks around the caller     |
@@ -146,8 +158,16 @@ attempt log.
 
 Signed-in learners can compare display names and XP globally. The response contains
 no emails or account IDs. Only learners with positive XP in the selected period are
-ranked; an unranked caller gets `currentUser: null`. Friends-only rankings and an
-opt-out preference are not implemented in this first version.
+ranked; an unranked caller gets `currentUser: null`. Friends-only rankings are not
+implemented.
+
+Learners can hide themselves with the switch on Profile, which sets
+`learner_profiles.hide_from_leaderboard` through `PATCH /api/progress/me`. Hidden
+learners are removed before ranking, so they take no rank and nobody else's rank has a
+gap; a hidden caller gets `currentUser: null` and `hidden: true`. The name shown is the
+one entered at sign-up, capped at 40 characters by `checkDisplayName` in `@fin/core`,
+which both sign-up and rename go through. Rows stored before the cap are shortened for
+display.
 
 All-time scores come from `learner_profiles.total_xp`. Weekly scores sum
 `daily_activity.xp_earned` in a Monday-inclusive, next-Monday-exclusive date window.
@@ -174,11 +194,13 @@ both tabs and a completed lesson's XP update on web and a native device.
 
 ## Not built yet
 
-Tracked against the pitch backlog:
-
-- **XP/streak UI (5, Josh)**. The rules and the API are done; the profile screen shows a
-  plain progress bar where the real treatment goes.
-- **Email verification and password reset**. Needs an email provider, so sign-up
-  currently works without one.
-- **Content beyond the first two units**. Budgeting/saving and banking/emergency savings
-  are authored; `money-basics` remains a short compounding and credit starter.
+- **Email in production.** Verification and password reset are built and tested, but
+  nothing is sent until the project domain is verified in Resend and `RESEND_API_KEY` is
+  set. Steps are in `docs/operations.md`.
+- **Auth screens in the app.** The API supports all four; the screens do not exist yet:
+  forgot password, the reset page the email links to (`/reset-password?token=...`),
+  resending verification, and deleting an account.
+- **Native sign-in on a device.** Untested, and likely needs the Expo Go origin trusted.
+  See `docs/known-issues.md`.
+- **More content (7).** Three units are authored: budgeting and saving, banking and
+  emergency savings, and money basics.

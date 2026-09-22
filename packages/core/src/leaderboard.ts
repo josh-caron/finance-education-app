@@ -17,3 +17,12 @@ export interface LeaderboardResult {
   nearby: LeaderboardEntry[];
   currentUser: LeaderboardEntry | null;
 }
+
+/**
+ * What GET /api/leaderboard returns. `hidden` is true when the caller has
+ * chosen to stay off the leaderboard, which is why `currentUser` is null for
+ * them even if they have XP.
+ */
+export interface LeaderboardResponse extends LeaderboardResult {
+  hidden: boolean;
+}
