@@ -194,11 +194,13 @@ both tabs and a completed lesson's XP update on web and a native device.
 
 ## Not built yet
 
-Tracked against the pitch backlog:
-
-- **XP/streak UI (5, Josh)**. The rules and the API are done; the profile screen shows a
-  plain progress bar where the real treatment goes.
-- **Email verification and password reset**. Needs an email provider, so sign-up
-  currently works without one.
-- **Content beyond the first two units**. Budgeting/saving and banking/emergency savings
-  are authored; `money-basics` remains a short compounding and credit starter.
+- **Email in production.** Verification and password reset are built and tested, but
+  nothing is sent until the project domain is verified in Resend and `RESEND_API_KEY` is
+  set. Steps are in `docs/operations.md`.
+- **Auth screens in the app.** The API supports all four; the screens do not exist yet:
+  forgot password, the reset page the email links to (`/reset-password?token=...`),
+  resending verification, and deleting an account.
+- **Native sign-in on a device.** Untested, and likely needs the Expo Go origin trusted.
+  See `docs/known-issues.md`.
+- **More content (7).** Three units are authored: budgeting and saving, banking and
+  emergency savings, and money basics.

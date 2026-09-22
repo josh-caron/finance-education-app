@@ -56,7 +56,10 @@
     "TRUSTED_ORIGINS": "fineduapp://",
   },
 
+  // Auth email is off until EMAIL_FROM is added here and RESEND_API_KEY is set
+  // as a secret; see "Email" in docs/operations.md.
+  //
   // BETTER_AUTH_SECRET is a secret, never a var:
-  //   local:  apps/api/.dev.vars, written by `pnpm setup`
+  //   local:  apps/api/.dev.vars, written by `pnpm setup:local`
   //   remote: wrangler secret put BETTER_AUTH_SECRET
 }
