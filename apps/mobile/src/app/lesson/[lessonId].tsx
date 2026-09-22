@@ -212,10 +212,6 @@ export default function LessonScreen() {
                 : 'Correct · practice, already banked'}
           </ThemedText>
 
-          {!result.correct && exercise?.hint ? (
-            <ThemedText type="small">Hint: {exercise.hint}</ThemedText>
-          ) : null}
-
           {result.expected ? <ThemedText type="small">Answer: {result.expected}</ThemedText> : null}
 
           {result.explanation ? <ThemedText type="small">{result.explanation}</ThemedText> : null}
