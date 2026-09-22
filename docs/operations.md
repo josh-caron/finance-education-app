@@ -204,7 +204,9 @@ npx wrangler d1 execute fin-edu-db --remote --command "SELECT key, count, expire
 ```
 
 _Why you would:_ someone reports being locked out, or you want to see whether an
-endpoint is being hammered. Keys are `scope:window:ip`.
+endpoint is being hammered. Keys are `scope:window:ip`. Sign-up also has one shared
+counter for everyone, `sign-up:3600:*all*`; if every sign-up is being refused, check that
+one first.
 
 Clear a specific caller, for instance to unblock a demo:
 
