@@ -6,3 +6,4 @@ export * from './rate-limit';
 export * from './unlocks';
 export * from './finance';
 export * from './leaderboard';
+export * from './display-name';

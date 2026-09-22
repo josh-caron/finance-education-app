@@ -18,8 +18,3 @@ itself still works, since verification is optional.
 The Expo auth client sends its origin from `Linking.createURL`, which is `exp://...` in Expo
 Go. Production only trusts `fineduapp://`, so sign-in on a phone through Expo Go would
 probably fail with "Invalid origin". Needs a real device test.
-
-## The leaderboard shows sign-up names to everyone
-
-Whatever a learner typed as their name at sign-up is visible to every other learner, with no
-display name or opt-out, and no length cap on the name.

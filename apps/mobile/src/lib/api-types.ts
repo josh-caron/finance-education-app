@@ -63,6 +63,8 @@ export interface DailyActivity {
 }
 
 export interface LearnerProfile {
+  /** False when the learner has chosen to stay off the leaderboard. */
+  showOnLeaderboard: boolean;
   totalXp: number;
   level: number;
   xpIntoLevel: number;

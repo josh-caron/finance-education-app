@@ -3,6 +3,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { account, session, user, verification, type Database } from '@fin/db';
+import { checkDisplayName } from '@fin/core';
 
 import { createMailer, passwordResetEmail, verificationEmail } from './email';
 import type { Bindings } from './types';
@@ -91,6 +92,15 @@ export function createAuth(env: Bindings, db: Database, ctx?: BackgroundTasks) {
 
     hooks: {
       before: createAuthMiddleware(async (context) => {
+        // Names show on the leaderboard, so both ways of setting one are checked.
+        if (
+          (context.path === '/sign-up/email' || context.path === '/update-user') &&
+          context.body?.name !== undefined
+        ) {
+          const check = checkDisplayName(context.body.name);
+          if (!check.ok) throw new APIError('BAD_REQUEST', { message: check.message });
+        }
+
         if (context.path === '/delete-user' && !context.body?.password) {
           // A stolen session cookie alone should not be enough to erase an
           // account and its history.

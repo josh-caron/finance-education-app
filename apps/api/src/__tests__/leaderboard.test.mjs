@@ -7,11 +7,13 @@ function fixture(t) {
   const db = new DatabaseSync(':memory:');
   t.after(() => db.close());
   db.exec(`CREATE TABLE user (id TEXT PRIMARY KEY, name TEXT);
-    CREATE TABLE learner_profiles (user_id TEXT PRIMARY KEY, total_xp INTEGER);
+    CREATE TABLE learner_profiles (user_id TEXT PRIMARY KEY, total_xp INTEGER, hide_from_leaderboard INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE daily_activity (user_id TEXT, day TEXT, xp_earned INTEGER);`);
-  const add = (id, xp, name = id) => {
-    db.prepare('INSERT INTO user VALUES (?, ?)').run(id, name);
-    db.prepare('INSERT INTO learner_profiles VALUES (?, ?)').run(id, xp);
+  const add = (id, xp, name = id, hidden = false) => {
+    db.prepare('INSERT INTO user (id, name) VALUES (?, ?)').run(id, name);
+    db.prepare(
+      'INSERT INTO learner_profiles (user_id, total_xp, hide_from_leaderboard) VALUES (?, ?, ?)',
+    ).run(id, xp, hidden ? 1 : 0);
   };
   const query = (id, period = 'all-time') => {
     const week = leaderboardWeek(new Date('2026-09-13T23:59:59Z'));
@@ -132,4 +134,32 @@ test('week selection uses UTC and handles Monday, year rollover and leap day', (
     start: '2024-02-26',
     end: '2024-03-04',
   });
+});
+
+test('learners who hide are left out, and ranks close up around them', (t) => {
+  const { add, query, db } = fixture(t);
+  add('top', 300);
+  add('hider', 200, 'hider', true);
+  add('third', 100);
+  db.prepare('INSERT INTO daily_activity VALUES (?, ?, ?)').run('hider', '2026-09-08', 50);
+  db.prepare('INSERT INTO daily_activity VALUES (?, ?, ?)').run('third', '2026-09-08', 10);
+
+  const allTime = query('third');
+  assert.deepEqual(
+    allTime.entries.map((e) => [e.rank, e.name]),
+    [
+      [1, 'top'],
+      [2, 'third'],
+    ],
+  );
+  assert.equal(allTime.totalLearners, 2);
+
+  const weekly = query('third', 'weekly');
+  assert.deepEqual(
+    weekly.entries.map((e) => e.name),
+    ['third'],
+  );
+
+  // A hidden learner gets no rank of their own either.
+  assert.equal(query('hider').currentUser, null);
 });

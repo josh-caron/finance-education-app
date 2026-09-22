@@ -149,6 +149,7 @@ attempt log.
 | GET    | `/api/content/units`                       | optional | Skill tree, with progress if signed in |
 | GET    | `/api/content/lessons/:lessonId`           | optional | Lesson with answer keys stripped       |
 | GET    | `/api/progress/me`                         | required | XP, level, streak, lesson statuses     |
+| PATCH  | `/api/progress/me`                         | required | Settings: `showOnLeaderboard`          |
 | POST   | `/api/progress/lessons/:lessonId/attempts` | required | Grade one submission                   |
 | POST   | `/api/progress/lessons/:lessonId/complete` | required | Award XP, advance streak               |
 | GET    | `/api/leaderboard?period=all-time\|weekly` | required | Top 10 and ranks around the caller     |
@@ -157,8 +158,16 @@ attempt log.
 
 Signed-in learners can compare display names and XP globally. The response contains
 no emails or account IDs. Only learners with positive XP in the selected period are
-ranked; an unranked caller gets `currentUser: null`. Friends-only rankings and an
-opt-out preference are not implemented in this first version.
+ranked; an unranked caller gets `currentUser: null`. Friends-only rankings are not
+implemented.
+
+Learners can hide themselves with the switch on Profile, which sets
+`learner_profiles.hide_from_leaderboard` through `PATCH /api/progress/me`. Hidden
+learners are removed before ranking, so they take no rank and nobody else's rank has a
+gap; a hidden caller gets `currentUser: null` and `hidden: true`. The name shown is the
+one entered at sign-up, capped at 40 characters by `checkDisplayName` in `@fin/core`,
+which both sign-up and rename go through. Rows stored before the cap are shortened for
+display.
 
 All-time scores come from `learner_profiles.total_xp`. Weekly scores sum
 `daily_activity.xp_earned` in a Monday-inclusive, next-Monday-exclusive date window.
