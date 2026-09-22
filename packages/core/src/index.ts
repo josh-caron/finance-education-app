@@ -3,5 +3,6 @@ export * from './public';
 export * from './grading';
 export * from './progression';
 export * from './rate-limit';
+export * from './unlocks';
 export * from './finance';
 export * from './leaderboard';

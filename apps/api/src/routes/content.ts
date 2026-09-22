@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { asc, eq } from 'drizzle-orm';
 import { exercises, lessonProgress, lessons, unitPrerequisites, units } from '@fin/db';
-import { toPublicExercise } from '@fin/core';
+import { groupBy, isUnitUnlocked, toPublicExercise } from '@fin/core';
 
 import type { AppEnv } from '../types';
 
@@ -34,24 +34,27 @@ contentRoutes.get('/units', async (c) => {
     lessonsByUnit.set(lesson.unitId, bucket);
   }
 
-  const prerequisitesByUnit = new Map<string, string[]>();
-  for (const edge of prerequisiteRows) {
-    const bucket = prerequisitesByUnit.get(edge.unitId) ?? [];
-    bucket.push(edge.prerequisiteUnitId);
-    prerequisitesByUnit.set(edge.unitId, bucket);
-  }
-
-  const isUnitComplete = (unitId: string): boolean => {
-    const unitLessons = lessonsByUnit.get(unitId) ?? [];
-    return (
-      unitLessons.length > 0 &&
-      unitLessons.every((lesson) => progressByLesson.get(lesson.id)?.status === 'completed')
-    );
+  // The same rule the answer routes enforce, so the tree never shows a unit as
+  // open that the API would refuse, or the reverse.
+  const graph = {
+    prerequisitesByUnit: groupBy(
+      prerequisiteRows,
+      (edge) => edge.unitId,
+      (edge) => edge.prerequisiteUnitId,
+    ),
+    lessonsByUnit: groupBy(
+      lessonRows,
+      (lesson) => lesson.unitId,
+      (lesson) => lesson.id,
+    ),
   };
+  const completedLessonIds = new Set(
+    progressRows.filter((row) => row.status === 'completed').map((row) => row.lessonId),
+  );
 
   return c.json({
     units: unitRows.map((unit) => {
-      const prerequisites = prerequisitesByUnit.get(unit.id) ?? [];
+      const prerequisites = graph.prerequisitesByUnit.get(unit.id) ?? [];
 
       return {
         id: unit.id,
@@ -59,7 +62,7 @@ contentRoutes.get('/units', async (c) => {
         description: unit.description,
         order: unit.sortOrder,
         prerequisites,
-        unlocked: prerequisites.every(isUnitComplete),
+        unlocked: isUnitUnlocked(unit.id, graph, completedLessonIds),
         lessons: (lessonsByUnit.get(unit.id) ?? []).map((lesson) => {
           const progress = progressByLesson.get(lesson.id);
 

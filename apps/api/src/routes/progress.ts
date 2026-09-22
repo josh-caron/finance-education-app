@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -24,6 +24,7 @@ import {
 } from '@fin/core';
 
 import { requireAuth } from '../middleware/session';
+import { lockingPrerequisites } from '../unlocks';
 import type { AppEnv } from '../types';
 
 export const progressRoutes = new Hono<AppEnv>();
@@ -163,6 +164,16 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
     return c.json({ error: 'Exercise not found in this lesson' }, 404);
   }
 
+  const [owningLesson] = await db
+    .select({ unitId: lessons.unitId })
+    .from(lessons)
+    .where(eq(lessons.id, lessonId))
+    .limit(1);
+  const locked = await lockingPrerequisites(db, user.id, owningLesson!.unitId);
+  if (locked.length > 0) {
+    return lockedResponse(c, locked);
+  }
+
   const [progressRow] = await db
     .select({ completions: lessonProgress.completions })
     .from(lessonProgress)
@@ -262,6 +273,11 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
   const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId)).limit(1);
   if (!lesson) {
     return c.json({ error: 'Lesson not found' }, 404);
+  }
+
+  const locked = await lockingPrerequisites(db, user.id, lesson.unitId);
+  if (locked.length > 0) {
+    return lockedResponse(c, locked);
   }
 
   const [existing] = await db
@@ -389,6 +405,14 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
 });
 
 type Db = AppEnv['Variables']['db'];
+
+/**
+ * Locked units are enforced here, not only hidden in the UI: otherwise a learner
+ * calling the API directly could earn XP and leaderboard rank from them.
+ */
+function lockedResponse(c: Context<AppEnv>, requires: string[]) {
+  return c.json({ error: 'This lesson is locked', requires }, 403);
+}
 
 async function getOrCreateProfile(db: Db, userId: string) {
   const [existing] = await db

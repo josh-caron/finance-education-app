@@ -88,6 +88,17 @@ React Native has no cookie jar, so `@better-auth/expo` stores the session token 
 `src/lib/auth-client.web.ts` drops the plugin and lets the browser handle the cookie.
 Metro picks the right file by extension. The two files must export the same names.
 
+### Locked units are enforced by the API
+
+A unit opens once every lesson in each of its prerequisite units is completed. The rule is
+`isUnitUnlocked` in `@fin/core`, and the API applies it in two places: the skill tree reports
+it, and the answer and completion routes refuse a locked lesson with a 403. Hiding locked
+units in the UI alone would let anyone calling the API directly earn XP and leaderboard rank
+from them.
+
+Reading a locked lesson is still allowed, so a learner can preview what comes next. Only
+earning from it is blocked.
+
 ### Rate limiting is a single SQL statement
 
 Counters are kept in D1 and advanced by one
