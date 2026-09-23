@@ -29,4 +29,13 @@ export async function sessionHeaders(): Promise<Record<string, string>> {
   return cookie ? { Cookie: cookie } : {};
 }
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const {
+  signIn,
+  signUp,
+  signOut,
+  useSession,
+  requestPasswordReset,
+  resetPassword,
+  sendVerificationEmail,
+  deleteUser,
+} = authClient;
