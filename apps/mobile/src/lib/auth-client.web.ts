@@ -17,4 +17,13 @@ export async function sessionHeaders(): Promise<Record<string, string>> {
   return {};
 }
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const {
+  signIn,
+  signUp,
+  signOut,
+  useSession,
+  requestPasswordReset,
+  resetPassword,
+  sendVerificationEmail,
+  deleteUser,
+} = authClient;

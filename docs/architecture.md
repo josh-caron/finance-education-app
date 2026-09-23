@@ -81,6 +81,15 @@ It also removes a circular dependency: the web build needs no API URL, because
 Only a native build needs an absolute `EXPO_PUBLIC_API_URL`, since a binary has
 no origin to fall back on.
 
+### Failures are explained, not just reported
+
+`describeError` in the client turns a failure into something a learner can act on. A
+locked lesson, an ended session, a rate limit and an unreachable server each need a
+different response from the person reading it, and all four used to read "could not
+submit, try again". `ApiError` carries the status and any `Retry-After`, and a thrown
+`Error` is never shown as-is, because its message is written for us rather than for a
+learner.
+
 ### Auth is split by platform
 
 React Native has no cookie jar, so `@better-auth/expo` stores the session token in
@@ -197,9 +206,6 @@ both tabs and a completed lesson's XP update on web and a native device.
 - **Email in production.** Verification and password reset are built and tested, but
   nothing is sent until the project domain is verified in Resend and `RESEND_API_KEY` is
   set. Steps are in `docs/operations.md`.
-- **Auth screens in the app.** The API supports all four; the screens do not exist yet:
-  forgot password, the reset page the email links to (`/reset-password?token=...`),
-  resending verification, and deleting an account.
 - **Native sign-in on a device.** Untested, and likely needs the Expo Go origin trusted.
   See `docs/known-issues.md`.
 - **More content (7).** Three units are authored: budgeting and saving, banking and

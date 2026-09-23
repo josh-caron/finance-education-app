@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch } from '@/lib/api';
+import { describeError } from '@/lib/errors';
 import { useSession } from '@/lib/auth-client';
 
 export default function LeaderboardScreen() {
@@ -62,7 +63,9 @@ export default function LeaderboardScreen() {
         <ActivityIndicator accessibilityLabel="Loading leaderboard" />
       ) : query.isError ? (
         <View style={styles.group}>
-          <ThemedText themeColor="danger">Could not load rankings. Please try again.</ThemedText>
+          <ThemedText themeColor="danger">
+            {describeError(query.error, 'Could not load rankings. Please try again.')}
+          </ThemedText>
           <Button label="Try again" onPress={() => void refetch()} loading={query.isFetching} />
         </View>
       ) : query.data ? (

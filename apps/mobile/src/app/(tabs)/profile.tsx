@@ -8,15 +8,18 @@ import { Button } from '@/components/button';
 import { LevelRing } from '@/components/level-ring';
 import { Screen } from '@/components/screen';
 import { StreakStrip } from '@/components/streak-strip';
+import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { XpBar } from '@/components/xp-bar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch, apiPatch } from '@/lib/api';
 import type { LearnerProfile } from '@/lib/api-types';
-import { signOut, useSession } from '@/lib/auth-client';
+import { deleteUser, sendVerificationEmail, signOut, useSession } from '@/lib/auth-client';
+import { describeError } from '@/lib/errors';
 
 export default function ProfileScreen() {
+  const theme = useTheme();
   const { data: session } = useSession();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -29,6 +32,48 @@ export default function ProfileScreen() {
     queryFn: () => apiFetch<LearnerProfile>(`/api/progress/me?localDay=${localDay}`),
   });
 
+  async function handleResendVerification() {
+    if (sendingVerification || !session?.user.email) return;
+    setSendingVerification(true);
+    setVerificationError(null);
+
+    try {
+      const { error } = await sendVerificationEmail({
+        email: session.user.email,
+        callbackURL: '/',
+      });
+      if (error) {
+        setVerificationError(describeError(error, 'Could not send the email. Try again.'));
+        return;
+      }
+      setVerificationSent(true);
+    } catch (thrown) {
+      setVerificationError(describeError(thrown, 'Could not send the email. Try again.'));
+    } finally {
+      setSendingVerification(false);
+    }
+  }
+
+  /** Deleting takes the password every time, so a borrowed session is not enough. */
+  async function handleDeleteAccount() {
+    if (deleting || deletePassword.length === 0) return;
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const { error } = await deleteUser({ password: deletePassword });
+      if (error) {
+        setDeleteError(describeError(error, 'Could not delete your account. Check your password.'));
+        return;
+      }
+      router.replace('/(auth)/sign-in');
+    } catch (thrown) {
+      setDeleteError(describeError(thrown, 'Could not delete your account. Try again.'));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function handleSignOut() {
     if (signingOut) return;
     setSigningOut(true);
@@ -36,16 +81,25 @@ export default function ProfileScreen() {
     try {
       const result = await signOut();
       if (result.error) {
-        setSignOutError(result.error.message ?? 'Could not sign out. Please try again.');
+        setSignOutError(describeError(result.error, 'Could not sign out. Please try again.'));
         return;
       }
       router.replace('/(auth)/sign-in');
-    } catch {
-      setSignOutError('Could not connect to the server. Please try signing out again.');
+    } catch (thrown) {
+      setSignOutError(describeError(thrown, 'Could not sign out. Please try again.'));
     } finally {
       setSigningOut(false);
     }
   }
+
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [sendingVerification, setSendingVerification] = useState(false);
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const queryClient = useQueryClient();
   const visibility = useMutation({
@@ -73,7 +127,7 @@ export default function ProfileScreen() {
 
       {profileQuery.isError ? (
         <ThemedText type="small" themeColor="danger">
-          Could not load your progress.
+          {describeError(profileQuery.error, 'Could not load your progress.')}
         </ThemedText>
       ) : null}
 
@@ -123,10 +177,34 @@ export default function ProfileScreen() {
           </View>
           {visibility.isError ? (
             <ThemedText type="small" themeColor="danger">
-              Could not save that setting. Please try again.
+              {describeError(visibility.error, 'Could not save that setting. Try again.')}
             </ThemedText>
           ) : null}
         </>
+      ) : null}
+
+      {session && !session.user.emailVerified ? (
+        <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="smallBold">Verify your email</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {verificationSent
+              ? 'Sent. Check your inbox, and your spam folder.'
+              : 'You can keep learning either way, but a verified address is what lets you reset your password.'}
+          </ThemedText>
+          {verificationError ? (
+            <ThemedText type="small" themeColor="danger">
+              {verificationError}
+            </ThemedText>
+          ) : null}
+          {verificationSent ? null : (
+            <Button
+              label="Send verification email"
+              variant="secondary"
+              onPress={handleResendVerification}
+              loading={sendingVerification}
+            />
+          )}
+        </View>
       ) : null}
 
       {signOutError ? (
@@ -135,6 +213,56 @@ export default function ProfileScreen() {
         </ThemedText>
       ) : null}
       <Button label="Sign out" variant="secondary" onPress={handleSignOut} loading={signingOut} />
+
+      <View style={[styles.notice, { borderColor: theme.danger, borderWidth: 1 }]}>
+        <ThemedText type="smallBold" themeColor="danger">
+          Delete your account
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          This removes your account, your XP, and every lesson you have finished. It cannot be
+          undone.
+        </ThemedText>
+
+        {confirmingDelete ? (
+          <>
+            <TextField
+              label="Confirm your password"
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+              secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
+            />
+            {deleteError ? (
+              <ThemedText type="small" themeColor="danger">
+                {deleteError}
+              </ThemedText>
+            ) : null}
+            <Button
+              label="Delete my account permanently"
+              variant="danger"
+              onPress={handleDeleteAccount}
+              disabled={deletePassword.length === 0}
+              loading={deleting}
+            />
+            <Button
+              label="Keep my account"
+              variant="secondary"
+              onPress={() => {
+                setConfirmingDelete(false);
+                setDeletePassword('');
+                setDeleteError(null);
+              }}
+            />
+          </>
+        ) : (
+          <Button
+            label="Delete account"
+            variant="secondary"
+            onPress={() => setConfirmingDelete(true)}
+          />
+        )}
+      </View>
     </Screen>
   );
 }
@@ -172,4 +300,5 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
   setting: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   settingText: { flex: 1, gap: Spacing.one },
+  notice: { borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
 });

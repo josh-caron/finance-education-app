@@ -8,6 +8,7 @@ import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { signIn } from '@/lib/auth-client';
+import { describeError } from '@/lib/errors';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -29,13 +30,13 @@ export default function SignInScreen() {
       });
 
       if (signInError) {
-        setError(signInError.message ?? 'Could not sign in. Check your email and password.');
+        setError(describeError(signInError, 'Could not sign in. Check your email and password.'));
         return;
       }
 
       router.replace('/(tabs)/learn');
-    } catch {
-      setError('Could not connect to the server. Check your connection and try again.');
+    } catch (thrown) {
+      setError(describeError(thrown, 'Could not sign in. Try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -72,6 +73,12 @@ export default function SignInScreen() {
       ) : null}
 
       <Button label="Sign in" onPress={handleSubmit} disabled={!canSubmit} loading={submitting} />
+
+      <Link href="/(auth)/forgot-password" style={styles.link}>
+        <ThemedText type="link" themeColor="brand">
+          Forgot your password?
+        </ThemedText>
+      </Link>
 
       <Link href="/(auth)/sign-up" style={styles.link}>
         <ThemedText type="link" themeColor="brand">
