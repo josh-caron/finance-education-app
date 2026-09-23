@@ -81,12 +81,12 @@ export default function ProfileScreen() {
     try {
       const result = await signOut();
       if (result.error) {
-        setSignOutError(result.error.message ?? 'Could not sign out. Please try again.');
+        setSignOutError(describeError(result.error, 'Could not sign out. Please try again.'));
         return;
       }
       router.replace('/(auth)/sign-in');
-    } catch {
-      setSignOutError('Could not connect to the server. Please try signing out again.');
+    } catch (thrown) {
+      setSignOutError(describeError(thrown, 'Could not sign out. Please try again.'));
     } finally {
       setSigningOut(false);
     }
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
 
       {profileQuery.isError ? (
         <ThemedText type="small" themeColor="danger">
-          Could not load your progress.
+          {describeError(profileQuery.error, 'Could not load your progress.')}
         </ThemedText>
       ) : null}
 
@@ -177,7 +177,7 @@ export default function ProfileScreen() {
           </View>
           {visibility.isError ? (
             <ThemedText type="small" themeColor="danger">
-              Could not save that setting. Please try again.
+              {describeError(visibility.error, 'Could not save that setting. Try again.')}
             </ThemedText>
           ) : null}
         </>

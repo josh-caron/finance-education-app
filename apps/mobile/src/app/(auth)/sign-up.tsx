@@ -9,6 +9,7 @@ import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { signUp } from '@/lib/auth-client';
+import { describeError } from '@/lib/errors';
 
 /** Must match `emailAndPassword.minPasswordLength` in apps/api/src/auth.ts. */
 const MIN_PASSWORD_LENGTH = 8;
@@ -37,7 +38,7 @@ export default function SignUpScreen() {
     setSubmitting(false);
 
     if (signUpError) {
-      setError(signUpError.message ?? 'Could not create your account.');
+      setError(describeError(signUpError, 'Could not create your account.'));
       return;
     }
 
