@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { UnitCard } from '@/components/unit-card';
 import { Spacing } from '@/constants/theme';
 import { apiFetch } from '@/lib/api';
+import { describeError } from '@/lib/errors';
 import type { LearnerProfile, UnitSummary } from '@/lib/api-types';
 
 /**
@@ -38,7 +39,7 @@ export default function LearnScreen() {
 
       {unitsQuery.isError ? (
         <ThemedText type="small" themeColor="danger">
-          Could not load the course. Is the API running?
+          {describeError(unitsQuery.error, 'Could not load the course. Try again.')}
         </ThemedText>
       ) : null}
 

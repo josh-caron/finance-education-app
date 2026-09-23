@@ -1,15 +1,8 @@
+import { ApiError } from './api-error';
 import { sessionHeaders } from './auth-client';
 import { API_URL } from './config';
 
-export class ApiError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+export { ApiError } from './api-error';
 
 /**
  * Thin fetch wrapper around the Hono API. `sessionHeaders()` is platform-split:
@@ -19,19 +12,34 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const auth = await sessionHeaders();
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...auth,
-      ...init.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...auth,
+        ...init.headers,
+      },
+    });
+  } catch {
+    // fetch only rejects when the request never got an answer.
+    throw new ApiError(0, 'Could not reach the server');
+  }
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new ApiError(response.status, body?.error ?? `Request failed (${response.status})`);
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+      retryAfter?: number;
+    } | null;
+    const headerRetry = Number(response.headers.get('Retry-After'));
+    const retryAfter = body?.retryAfter ?? (headerRetry > 0 ? headerRetry : undefined);
+    throw new ApiError(
+      response.status,
+      body?.error ?? `Request failed (${response.status})`,
+      retryAfter,
+    );
   }
 
   return (await response.json()) as T;

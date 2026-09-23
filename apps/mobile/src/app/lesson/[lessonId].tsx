@@ -18,6 +18,7 @@ import { XpBar } from '@/components/xp-bar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch, apiPost } from '@/lib/api';
+import { describeError } from '@/lib/errors';
 import type { AttemptResult, LessonCompletion, LessonDetail } from '@/lib/api-types';
 
 /**
@@ -92,7 +93,7 @@ export default function LessonScreen() {
     return (
       <Screen>
         <ThemedText type="small" themeColor="danger">
-          Could not load this lesson.
+          {describeError(lessonQuery.error, 'Could not load this lesson.')}
         </ThemedText>
         <Button label="Go back" variant="secondary" onPress={() => router.back()} />
       </Screen>
@@ -220,13 +221,13 @@ export default function LessonScreen() {
 
       {submit.isError ? (
         <ThemedText type="small" themeColor="danger">
-          Could not submit that answer. Try again.
+          {describeError(submit.error, 'Could not submit that answer. Try again.')}
         </ThemedText>
       ) : null}
 
       {complete.isError ? (
         <ThemedText type="small" themeColor="danger">
-          Could not save your progress. Answer every exercise correctly to finish the lesson.
+          {describeError(complete.error, 'Could not save your progress. Try again.')}
         </ThemedText>
       ) : null}
 
