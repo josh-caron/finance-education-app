@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { vi } from 'vitest';
 import { getPlatformProxy } from 'wrangler';
 
@@ -24,9 +25,8 @@ const migrations = import.meta.glob<string>('../../../packages/db/drizzle/*.sql'
  */
 export async function createHarness() {
   const proxy = await getPlatformProxy<{ DB: D1Database }>({
-    // decodeURIComponent because pathname percent-encodes spaces, and this repo
-    // lives at a path with spaces in it on at least one of our machines.
-    configPath: decodeURIComponent(new URL('./wrangler.test.jsonc', import.meta.url).pathname),
+    // Handle Windows drive letters as well as percent-encoded spaces.
+    configPath: fileURLToPath(new URL('./wrangler.test.jsonc', import.meta.url).href),
     envFiles: [],
     persist: false,
     remoteBindings: false,
