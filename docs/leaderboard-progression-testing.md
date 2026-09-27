@@ -7,14 +7,14 @@ Tested September 27, 2026, locally on Windows with Node 24.19.0.
 Normal sequential progression passes. Two concurrency defects remain open and
 can inflate leaderboard XP. This is not an all-clear result.
 
-| Check | Result |
-| --- | --- |
-| Existing API integration suite, using real ephemeral D1 and real authentication | 79 passed |
-| Core, content, and mobile helper suites | 168 passed, 1 failed |
-| SQLite leaderboard and content seed tests | 18 passed |
-| Added progression-to-leaderboard journey | 1 passed |
-| Added concurrent submission/completion tests | 2 failed |
-| API, API test, and mobile TypeScript checks | Passed after harness fix |
+| Check                                                                           | Result                   |
+| ------------------------------------------------------------------------------- | ------------------------ |
+| Existing API integration suite, using real ephemeral D1 and real authentication | 79 passed                |
+| Core, content, and mobile helper suites                                         | 168 passed, 1 failed     |
+| SQLite leaderboard and content seed tests                                       | 18 passed                |
+| Added progression-to-leaderboard journey                                        | 1 passed                 |
+| Added concurrent submission/completion tests                                    | 2 failed                 |
+| API, API test, and mobile TypeScript checks                                     | Passed after harness fix |
 
 Existing coverage includes tied ranks, top ten and nearby rows, weekly calendar
 boundaries, zero-XP exclusion, privacy opt-out/in, first-attempt XP bonuses,
