@@ -13,6 +13,9 @@ describe('budgeting and saving answer keys', () => {
     ['build-budget.adjust', cashRemainder(1200 + 500 + 200, 1800), 400],
     ['savings-goal.monthly', cashRemainder(600, 120) / 6, 100],
     ['savings-goal.deposits', depositsToReach(500, 100, 75), 5],
+    ['review.allocate', 300, 650],
+    ['review.goal', 150, 225],
+    ['review.cash-gap', 250, 400],
   ])('grades %s and rejects a plausible misconception', (suffix, correct, incorrect) => {
     const exercise = exercises.find((item) => item.id === `budgeting-saving.${suffix}`)!;
     expect(gradeExercise(exercise, { kind: 'computed_answer', value: correct }).correct).toBe(true);
@@ -26,6 +29,23 @@ describe('budgeting and saving answer keys', () => {
     expect(gradeExercise(exercise, { kind: 'computed_answer', value: 400 / 75 }).correct).toBe(
       false,
     );
+  });
+
+  it('requires a balanced revision and a record-first review', () => {
+    const adjustment = exercises.find((item) => item.id === 'budgeting-saving.review.adjust')!;
+    expect(gradeExercise(adjustment, { kind: 'multiple_choice', choiceId: 'cut' }).correct).toBe(
+      true,
+    );
+    expect(gradeExercise(adjustment, { kind: 'multiple_choice', choiceId: 'same' }).correct).toBe(
+      false,
+    );
+    const review = exercises.find((item) => item.id === 'budgeting-saving.review.process')!;
+    expect(
+      gradeExercise(review, { kind: 'ordering', order: ['record', 'compare', 'revise'] }).correct,
+    ).toBe(true);
+    expect(
+      gradeExercise(review, { kind: 'ordering', order: ['revise', 'compare', 'record'] }).correct,
+    ).toBe(false);
   });
 
   it('grades the income-versus-expenses comparison and ordering keys', () => {

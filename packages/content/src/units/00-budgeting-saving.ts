@@ -1,4 +1,5 @@
 import { cashRemainder, depositsToReach, type Unit } from '@fin/core';
+import { budgetingReview } from './budgeting-review';
 
 /** Backlog 4. Stable IDs keep authored content linked to learner progress. */
 export const budgetingSaving: Unit = {
@@ -326,5 +327,6 @@ export const budgetingSaving: Unit = {
         },
       ],
     },
+    budgetingReview,
   ],
 };

@@ -19,6 +19,11 @@ describe('banking and emergency answer keys', () => {
     ['fees.atm', cashRemainder(60 + 3 + 2.5), 60],
     ['insurance.uninsured', cashRemainder(280000, 250000), 280000],
     ['insurance.split', cashRemainder(180000 + 180000), 250000],
+    ['insurance.same-bank', 30000, 0],
+    ['savings-habit.buffer', 180, 230],
+    ['savings-habit.refill', 6, 5],
+    ['review.annual-fee', 96, 8],
+    ['review.reserve', 6, 9],
   ])('grades %s and rejects a plausible misconception', (suffix, correct, incorrect) => {
     const item = exercise(suffix);
     expect(gradeExercise(item, { kind: 'computed_answer', value: correct }).correct).toBe(true);
@@ -31,5 +36,32 @@ describe('banking and emergency answer keys', () => {
       true,
     );
     expect(gradeExercise(item, { kind: 'multiple_choice', choiceId: 'cash' }).correct).toBe(false);
+  });
+
+  it.each([
+    ['insurance.credit-union', 'verify', 'all'],
+    ['savings-habit.timing', 'after', 'before'],
+    ['savings-habit.irregular', 'adjust', 'ignore'],
+    ['savings-habit.planned', 'plan', 'emergency'],
+    ['review.account', 'b', 'a'],
+    ['review.access', 'deposit', 'stock'],
+  ])('grades the practical decision in %s', (suffix, correct, incorrect) => {
+    expect(
+      gradeExercise(exercise(suffix), { kind: 'multiple_choice', choiceId: correct }).correct,
+    ).toBe(true);
+    expect(
+      gradeExercise(exercise(suffix), { kind: 'multiple_choice', choiceId: incorrect }).correct,
+    ).toBe(false);
+  });
+
+  it.each([
+    ['accounts.order', ['checking', 'emergency', 'goal']],
+    ['insurance.order', ['under', 'split', 'over']],
+    ['review.sequence', ['verify', 'pay', 'refill']],
+  ])('requires the stated sequence for %s', (suffix, order) => {
+    expect(gradeExercise(exercise(suffix), { kind: 'ordering', order }).correct).toBe(true);
+    expect(
+      gradeExercise(exercise(suffix), { kind: 'ordering', order: [...order].reverse() }).correct,
+    ).toBe(false);
   });
 });

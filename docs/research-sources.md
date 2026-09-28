@@ -4,7 +4,7 @@ Authoritative sites used to sequence and fact-check the first two learning
 units. Lesson dollar amounts and stories are original; these pages supply the
 concepts, not quotations.
 
-Accessed September 2026. Prefer the live page over this list if a rule can
+Rechecked September 27, 2026. Prefer the live page over this list if a rule can
 change (deposit-insurance limits, fee schedules).
 
 ## Budgeting and saving
@@ -20,9 +20,15 @@ change (deposit-insurance limits, fee schedules).
 | Source                                                     | URL                                                                               | What we used                                                                                                      |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | CFPB — An essential guide to building an emergency fund    | https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/ | An emergency fund is a cash reserve for unplanned costs or lost income; the right size depends on your situation. |
-| CFPB — Building your savings? Start with small goals (PDF) | https://files.consumerfinance.gov/f/documents/cfpb_ymyg-savings-booklet.pdf       | Start with a small rainy-day target (often $500, then $1,000); using the fund and refilling it is success.        |
+| CFPB — Building your savings? Start with small goals (PDF) | https://files.consumerfinance.gov/f/documents/cfpb_ymyg-savings-booklet.pdf       | Make a savings plan with a manageable personal goal; lesson amounts are illustrative.                             |
 | FDIC — Deposit insurance                                   | https://www.fdic.gov/deposit-insurance                                            | Eligible bank deposits are insured per depositor, per insured bank, per ownership category, up to a legal limit.  |
-| NCUA — Share insurance (credit unions)                     | https://www.mycreditunion.gov/share-insurance                                     | Parallel protection for most credit-union share accounts. Check this site for current credit-union rules.         |
+| NCUA — Share insurance (credit unions)                     | https://mycreditunion.gov/protect-your-money/share-insurance                      | Verify federal insurance; some credit unions are privately insured. Eligible deposits differ from investments.    |
+
+The expanded Unit 2 also uses the existing CFPB toolkit's tools for comparing
+financial service providers, opening checking or savings accounts, avoiding
+checking fees, and making a cash-flow budget. Its emergency-fund guide informs
+transfer timing, adjustments for changing income, and rebuilding a used reserve.
+Unit 1's review applies the same toolkit's budget and bill-calendar concepts.
 
 ## Intentionally not treated as permanent facts
 
