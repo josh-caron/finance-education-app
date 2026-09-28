@@ -201,71 +201,86 @@ progressRoutes.post('/lessons/:lessonId/attempts', async (c) => {
     return lockedResponse(c, locked);
   }
 
-  const [progressRow] = await db
-    .select({ completions: lessonProgress.completions })
-    .from(lessonProgress)
-    .where(and(eq(lessonProgress.userId, user.id), eq(lessonProgress.lessonId, lessonId)))
-    .limit(1);
-
-  const runNumber = (progressRow?.completions ?? 0) + 1;
-
-  const priorAttempts = await db
-    .select({ isCorrect: exerciseAttempts.isCorrect, runNumber: exerciseAttempts.runNumber })
-    .from(exerciseAttempts)
-    .where(and(eq(exerciseAttempts.userId, user.id), eq(exerciseAttempts.exerciseId, exercise.id)));
-
-  // Position within this pass, so "first try" stays meaningful on a replay.
-  const attemptNumber =
-    priorAttempts.filter((attempt) => attempt.runNumber === runNumber).length + 1;
-  // Banked once, ever. This is what makes a replay worth no XP.
-  const alreadySolved = priorAttempts.some((attempt) => attempt.isCorrect);
-
   const result = gradeExercise(exercise.payload, parsed.data.answer);
-  const xpAwarded = xpForAttempt({ correct: result.correct, attemptNumber, alreadySolved });
+  await getOrCreateProfile(db, user.id);
 
-  const profile = await getOrCreateProfile(db, user.id);
-
-  const logAttempt = db.insert(exerciseAttempts).values({
-    id: crypto.randomUUID(),
-    userId: user.id,
-    lessonId,
-    exerciseId: exercise.id,
-    runNumber,
-    attemptNumber,
-    isCorrect: result.correct,
-    submitted: parsed.data.answer,
-    xpAwarded,
+  // These reads execute inside the write batch, rather than before it. D1
+  // serializes batches, so a competing request sees the first one's attempt.
+  const runNumber = sql`(select completions + 1 from lesson_progress
+    where user_id = ${user.id} and lesson_id = ${lessonId})`;
+  const prior = sql`user_id = ${user.id} and exercise_id = ${exercise.id}`;
+  const alreadySolvedQuery = db
+    .select({ id: exerciseAttempts.id })
+    .from(exerciseAttempts)
+    .where(
+      and(
+        eq(exerciseAttempts.userId, user.id),
+        eq(exerciseAttempts.exerciseId, exercise.id),
+        eq(exerciseAttempts.isCorrect, true),
+      ),
+    )
+    .limit(1);
+  const firstTryXp = xpForAttempt({
+    correct: result.correct,
+    attemptNumber: 1,
+    alreadySolved: false,
   });
+  const retryXp = xpForAttempt({ correct: result.correct, attemptNumber: 2, alreadySolved: false });
+  const awardedXp = sql`case
+    when exists(select 1 from exercise_attempts where ${prior} and is_correct = 1) then 0
+    when exists(select 1 from exercise_attempts where ${prior}) then ${retryXp}
+    else ${firstTryXp} end`;
+  const attemptId = crypto.randomUUID();
+  const bankedXp = sql`(select xp_awarded from exercise_attempts where id = ${attemptId})`;
+
+  const logAttempt = db
+    .insert(exerciseAttempts)
+    .values({
+      id: attemptId,
+      userId: user.id,
+      lessonId,
+      exerciseId: exercise.id,
+      runNumber,
+      attemptNumber: sql`(select count(*) + 1 from exercise_attempts
+      where ${prior} and run_number = ${runNumber})`,
+      isCorrect: result.correct,
+      submitted: parsed.data.answer,
+      xpAwarded: awardedXp,
+    })
+    .returning();
 
   const markInProgress = db
     .insert(lessonProgress)
     .values({ userId: user.id, lessonId, status: 'in_progress' })
     .onConflictDoNothing();
 
-  if (xpAwarded > 0) {
-    await db.batch([
-      logAttempt,
-      markInProgress,
-      db
-        .update(learnerProfiles)
-        .set({
-          totalXp: sql`${learnerProfiles.totalXp} + ${xpAwarded}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(learnerProfiles.userId, user.id)),
-      db
-        .insert(dailyActivity)
-        .values({ userId: user.id, day: parsed.data.localDay, xpEarned: xpAwarded })
-        .onConflictDoUpdate({
-          target: [dailyActivity.userId, dailyActivity.day],
-          set: { xpEarned: sql`${dailyActivity.xpEarned} + ${xpAwarded}` },
-        }),
-    ]);
-  } else {
-    await db.batch([logAttempt, markInProgress]);
-  }
+  const [, solvedBefore, logged, profiles] = await db.batch([
+    markInProgress,
+    alreadySolvedQuery,
+    logAttempt,
+    db
+      .update(learnerProfiles)
+      .set({
+        totalXp: sql`${learnerProfiles.totalXp} + ${bankedXp}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(learnerProfiles.userId, user.id))
+      .returning(),
+    db
+      .insert(dailyActivity)
+      .select(
+        sql`select ${user.id}, ${parsed.data.localDay}, ${bankedXp}, 0
+          where ${bankedXp} > 0`,
+      )
+      .onConflictDoUpdate({
+        target: [dailyActivity.userId, dailyActivity.day],
+        set: { xpEarned: sql`${dailyActivity.xpEarned} + ${bankedXp}` },
+      }),
+  ]);
 
-  const totalXp = profile.totalXp + xpAwarded;
+  const { attemptNumber, xpAwarded } = logged[0]!;
+  const alreadySolved = solvedBefore.length > 0;
+  const totalXp = profiles[0]!.totalXp;
 
   return c.json({
     ...result,
@@ -362,32 +377,28 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
   const streak = advanceStreak(toStreakState(profile), parsed.data.localDay);
   const now = new Date();
 
-  // D1 has no interactive transactions; these run as a batch so the profile,
-  // lesson row and daily rollup cannot land partially.
-  await db.batch([
+  // Claim this run with a compare-and-set. Each following write is gated by
+  // changes() from the preceding write in the same atomic D1 batch. A request
+  // that loses the claim cannot pay XP or update daily activity.
+  const [completed, profiles] = await db.batch([
     db
-      .insert(lessonProgress)
-      .values({
-        userId: user.id,
-        lessonId,
+      .update(lessonProgress)
+      .set({
         status: 'completed',
-        bestScore: score,
-        xpEarned,
+        bestScore: sql`max(${lessonProgress.bestScore}, ${score})`,
+        xpEarned: sql`${lessonProgress.xpEarned} + ${xpEarned}`,
         completions: runNumber,
         completedAt: now,
         updatedAt: now,
       })
-      .onConflictDoUpdate({
-        target: [lessonProgress.userId, lessonProgress.lessonId],
-        set: {
-          status: 'completed',
-          bestScore: sql`max(${lessonProgress.bestScore}, ${score})`,
-          xpEarned: sql`${lessonProgress.xpEarned} + ${xpEarned}`,
-          completions: runNumber,
-          completedAt: now,
-          updatedAt: now,
-        },
-      }),
+      .where(
+        and(
+          eq(lessonProgress.userId, user.id),
+          eq(lessonProgress.lessonId, lessonId),
+          eq(lessonProgress.completions, runNumber - 1),
+        ),
+      )
+      .returning(),
     db
       .update(learnerProfiles)
       .set({
@@ -397,15 +408,14 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
         lastActiveDay: streak.lastActiveDay,
         updatedAt: now,
       })
-      .where(eq(learnerProfiles.userId, user.id)),
+      .where(and(eq(learnerProfiles.userId, user.id), sql`changes() = 1`))
+      .returning(),
     db
       .insert(dailyActivity)
-      .values({
-        userId: user.id,
-        day: parsed.data.localDay,
-        xpEarned: bonus,
-        lessonsCompleted: firstCompletion ? 1 : 0,
-      })
+      .select(
+        sql`select ${user.id}, ${parsed.data.localDay}, ${bonus}, ${firstCompletion ? 1 : 0}
+        where changes() = 1`,
+      )
       .onConflictDoUpdate({
         target: [dailyActivity.userId, dailyActivity.day],
         set: {
@@ -415,7 +425,11 @@ progressRoutes.post('/lessons/:lessonId/complete', async (c) => {
       }),
   ]);
 
-  const totalXp = profile.totalXp + bonus;
+  if (completed.length === 0) {
+    return c.json({ error: 'This lesson run has already been completed' }, 409);
+  }
+
+  const totalXp = profiles[0]!.totalXp;
 
   return c.json({
     xpEarned,
@@ -450,7 +464,13 @@ async function getOrCreateProfile(db: Db, userId: string) {
 
   if (existing) return existing;
 
-  const [created] = await db.insert(learnerProfiles).values({ userId }).returning();
+  // Concurrent first requests can both observe a missing profile.
+  await db.insert(learnerProfiles).values({ userId }).onConflictDoNothing();
+  const [created] = await db
+    .select()
+    .from(learnerProfiles)
+    .where(eq(learnerProfiles.userId, userId))
+    .limit(1);
   return created!;
 }
 
