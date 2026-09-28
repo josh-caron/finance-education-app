@@ -15,20 +15,27 @@ import { LevelRing } from '@/components/level-ring';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { XpBar } from '@/components/xp-bar';
+import { UnitCelebration } from '@/components/unit-celebration';
+import { getUnitCelebration } from '@/lib/unit-celebration';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch, apiPost } from '@/lib/api';
 import { describeError } from '@/lib/errors';
-import type { AttemptResult, LessonCompletion, LessonDetail } from '@/lib/api-types';
+import type { AttemptResult, LessonCompletion, LessonDetail, UnitSummary } from '@/lib/api-types';
 
 /**
  * The lesson player: one exercise at a time, submit for feedback, advance.
  * Grading happens on the server, so this screen never sees an answer key.
  */
 export default function LessonScreen() {
+  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
+  // Replacing this route with the next lesson must reset all player state.
+  return <LessonPlayer key={lessonId} lessonId={lessonId} />;
+}
+
+function LessonPlayer({ lessonId }: { lessonId: string }) {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
 
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -81,6 +88,15 @@ export default function LessonScreen() {
     },
   });
 
+  // Fetch after saving so the final lesson is included, even for direct links
+  // or an out-of-date skill tree. A failed fetch never discards saved progress.
+  const celebrationQuery = useQuery({
+    queryKey: ['unit-completion', lessonId, complete.submittedAt],
+    queryFn: () => apiFetch<{ units: UnitSummary[] }>('/api/content/units'),
+    enabled: completion?.firstCompletion === true,
+    gcTime: 0,
+  });
+
   if (lessonQuery.isPending) {
     return (
       <Screen scroll={false} contentStyle={styles.centered}>
@@ -104,9 +120,31 @@ export default function LessonScreen() {
 
   if (completion) {
     const leveledUp = completion.level > levelBefore.current;
+    const celebration = getUnitCelebration(
+      lesson.unitId,
+      completion.firstCompletion,
+      celebrationQuery.data?.units ?? [],
+    );
 
     return (
       <Screen>
+        {celebration ? <UnitCelebration celebration={celebration} /> : null}
+        {completion.firstCompletion && celebrationQuery.isPending ? (
+          <ActivityIndicator accessibilityLabel="Checking unit completion" />
+        ) : null}
+        {completion.firstCompletion && celebrationQuery.isError ? (
+          <View style={styles.feedback}>
+            <ThemedText type="small">
+              Your progress is saved. We could not load your unit milestone.
+            </ThemedText>
+            <Button
+              label="Check unit progress"
+              variant="secondary"
+              loading={celebrationQuery.isFetching}
+              onPress={() => void celebrationQuery.refetch()}
+            />
+          </View>
+        ) : null}
         <View style={styles.celebration}>
           <ThemedText type="subtitle">
             {leveledUp ? `Level ${completion.level}` : 'Lesson complete'}
@@ -149,7 +187,22 @@ export default function LessonScreen() {
           <SummaryTile label="Total XP" value={String(completion.totalXp)} />
         </View>
 
-        <Button label="Back to the tree" onPress={() => router.back()} />
+        {celebration?.nextLesson ? (
+          <Button
+            label={`Continue: ${celebration.nextUnit!.title}`}
+            onPress={() =>
+              router.replace({
+                pathname: '/lesson/[lessonId]',
+                params: { lessonId: celebration.nextLesson!.id },
+              })
+            }
+          />
+        ) : null}
+        <Button
+          label={celebration?.courseComplete ? 'Back to practice' : 'Back to the tree'}
+          variant={celebration?.nextLesson ? 'secondary' : 'primary'}
+          onPress={() => router.replace('/(tabs)/learn')}
+        />
       </Screen>
     );
   }
@@ -158,14 +211,13 @@ export default function LessonScreen() {
   const answerReady = exercise && currentDraft ? toAnswer(exercise, currentDraft) !== null : false;
 
   function goToNext() {
-    setResult(null);
-    setDraft(null);
-
     if (isLast) {
       complete.mutate();
       return;
     }
 
+    setResult(null);
+    setDraft(null);
     setIndex((current) => current + 1);
   }
 
