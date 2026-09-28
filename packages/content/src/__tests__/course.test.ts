@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isUnitUnlocked } from '@fin/core';
 
 import { course, exercises, findLesson, findUnitForLesson, lessons, units } from '../index';
 
@@ -9,6 +10,25 @@ import { course, exercises, findLesson, findUnitForLesson, lessons, units } from
  */
 
 describe('course integrity', () => {
+  it('requires the new review and savings lessons before advancing', () => {
+    const graph = {
+      prerequisitesByUnit: new Map(units.map((unit) => [unit.id, unit.prerequisites])),
+      lessonsByUnit: new Map(
+        units.map((unit) => [unit.id, unit.lessons.map((lesson) => lesson.id)]),
+      ),
+    };
+    const completed = new Set(units[0]!.lessons.slice(0, -1).map((lesson) => lesson.id));
+    expect(isUnitUnlocked('banking-emergency', graph, completed)).toBe(false);
+    completed.add('budgeting-saving.review');
+    expect(isUnitUnlocked('banking-emergency', graph, completed)).toBe(true);
+    for (const lesson of units[1]!.lessons.slice(0, -2)) completed.add(lesson.id);
+    expect(isUnitUnlocked('money-basics', graph, completed)).toBe(false);
+    completed.add('banking-emergency.savings-habit');
+    expect(isUnitUnlocked('money-basics', graph, completed)).toBe(false);
+    completed.add('banking-emergency.review');
+    expect(isUnitUnlocked('money-basics', graph, completed)).toBe(true);
+  });
+
   it('parses against the content schema', () => {
     expect(course.length).toBeGreaterThan(0);
   });

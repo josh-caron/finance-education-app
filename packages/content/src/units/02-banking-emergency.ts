@@ -1,4 +1,5 @@
 import { cashRemainder, depositsToReach, monthsOfExpensesCovered, type Unit } from '@fin/core';
+import { bankingPractice } from './banking-practice';
 
 /**
  * Follows budgeting and saving. Learners choose a place to keep cash, start an
@@ -80,16 +81,16 @@ export const bankingEmergency: Unit = {
           id: 'banking-emergency.accounts.order',
           kind: 'ordering',
           prompt:
-            'Order these uses of money from most liquid for this week’s bills to most set aside for later.',
+            'All three accounts allow withdrawals today. Order the planned uses by time until payment, soonest to latest. This compares deadlines, not account liquidity.',
           items: [
-            { id: 'goal', label: 'Savings earmarked for a goal next year' },
+            { id: 'goal', label: 'Savings for a course fee due in one year' },
             { id: 'checking', label: 'Checking used to pay rent this week' },
-            { id: 'emergency', label: 'Savings reserved for emergencies' },
+            { id: 'emergency', label: 'Emergency savings for an urgent repair due in two weeks' },
           ],
           correctOrder: ['checking', 'emergency', 'goal'],
-          hint: 'Ask which pile you would tap first for a bill due in three days.',
+          hint: 'Compare this week, two weeks, and one year.',
           explanation:
-            'Checking is for near-term payments. Emergency savings is available but reserved. Goal savings is intentionally harder to treat as this week’s spending money.',
+            'The rent is due first, the repair next, and the course fee last. Money earmarked for a later goal is not automatically less liquid; access depends on the account terms.',
         },
       ],
     },
@@ -97,7 +98,7 @@ export const bankingEmergency: Unit = {
       id: 'banking-emergency.emergency-fund',
       title: 'Start an Emergency Fund',
       intro:
-        'An emergency fund is cash set aside for unplanned expenses or a loss of income, such as a car repair or a medical bill. The Consumer Financial Protection Bureau recommends starting with a small, specific goal—often $500, then $1,000—because the right later target depends on your own costs. A multi-month reserve of essential expenses is a later step, not a requirement to begin.',
+        'An emergency fund is cash for unexpected costs or lost income. CFPB guidance says the target depends on your situation; even small savings help. This lesson uses $500 as an example, not a required first goal. Keep a reserve accessible and separate from planned spending. After using it, plan to rebuild it. For the calculations below, assume no interest, fees, or withdrawals unless stated.',
       exercises: [
         {
           id: 'banking-emergency.emergency-fund.purpose',
@@ -179,7 +180,7 @@ export const bankingEmergency: Unit = {
           id: 'banking-emergency.fees.overdraft',
           kind: 'multiple_choice',
           prompt:
-            'Your checking balance is $12 and a $40 debit posts. The bank pays the debit and charges the $35 overdraft fee named in this problem. What happened?',
+            'Your checking balance is $12. Assume you opted into debit-card overdraft coverage; the bank pays a $40 purchase and charges the $35 fee disclosed in this scenario. What happened?',
           choices: [
             { id: 'free', label: 'The bank covered the purchase at no cost' },
             {
@@ -189,7 +190,7 @@ export const bankingEmergency: Unit = {
             { id: 'ignored', label: 'Overdraft fees never apply to debit-card purchases' },
           ],
           correctChoiceId: 'fee',
-          hint: 'An overdraft means the bank covered more than your balance, usually for a fee listed in the account terms.',
+          hint: 'Use the purchase and fee explicitly stated here; do not assume all accounts charge this fee.',
           explanation:
             'The $40 debit exceeded the $12 balance. If the bank pays it and charges the $35 fee in this scenario, you must repay both the negative balance and the fee. Real fees are disclosed by each institution and can differ.',
         },
@@ -197,7 +198,7 @@ export const bankingEmergency: Unit = {
           id: 'banking-emergency.fees.balance',
           kind: 'computed_answer',
           prompt:
-            'You start the day at $12. A $40 debit is paid and a $35 overdraft fee is charged, with no other activity. What is the account balance, in dollars? Use a minus sign if it is negative.',
+            'Assume you opted into debit-card overdraft coverage. You start at $12; the bank pays a $40 purchase and charges the stated $35 fee, with no other activity. What is the balance? Use a minus sign if negative.',
           answer: cashRemainder(12, 40, 35),
           format: 'usd',
           tolerance: { type: 'absolute', value: 0.01 },
@@ -258,7 +259,7 @@ export const bankingEmergency: Unit = {
       id: 'banking-emergency.insurance',
       title: 'Keep Deposits Safe',
       intro:
-        'Deposit insurance protects eligible deposits if an insured bank or credit union fails. In the United States, the FDIC insures banks and the NCUA insures most credit unions. Coverage is generally per depositor, per insured institution, per ownership category, up to a limit set by law. That limit can change, so these exercises state the limit used in the scenario. Confirm current rules at FDIC.gov or MyCreditUnion.gov.',
+        'Deposit insurance protects eligible deposits when an insured institution fails, not investment losses. FDIC covers insured banks; NCUA covers federally insured credit unions, but some credit unions use private insurance. At one bank, your deposits in the same ownership category are combined, even across checking and savings. Separate branches are still the same bank. These scenarios state their limit; confirm current coverage and the institution at FDIC.gov or MyCreditUnion.gov.',
       exercises: [
         {
           id: 'banking-emergency.insurance.who',
@@ -331,14 +332,46 @@ export const bankingEmergency: Unit = {
           items: [
             { id: 'over', label: '$400,000 at one insured bank' },
             { id: 'under', label: '$40,000 at one insured bank' },
-            { id: 'split', label: '$200,000 at each of two insured banks' },
+            { id: 'split', label: '$300,000 at Bank A and $200,000 at a separate insured Bank B' },
           ],
           correctOrder: ['under', 'split', 'over'],
           hint: 'Uninsured here means the dollars above $250,000 at a single bank.',
           explanation:
-            '$40,000 is fully within the limit (uninsured $0). $200,000 + $200,000 at two banks is also within this per-bank limit. $400,000 at one bank is $150,000 above the stated limit.',
+            'The amounts above the scenario limit are $0, $50,000, and $150,000. In the two-bank example, only Bank A exceeds $250,000. Each item therefore has a distinct position.',
+        },
+        {
+          id: 'banking-emergency.insurance.same-bank',
+          kind: 'computed_answer',
+          prompt:
+            'Assume a $250,000 limit per depositor, per insured bank, per ownership category. Your only deposits are $180,000 in checking and $100,000 in savings, both solely owned by you at the same bank. How much is above the limit?',
+          answer: cashRemainder(180000 + 100000, 250000),
+          format: 'usd',
+          tolerance: { type: 'absolute', value: 0.01 },
+          hint: 'Combine both balances before subtracting the stated limit.',
+          explanation:
+            '$180,000 + $100,000 - $250,000 = $30,000 above the limit. Different deposit products do not create separate ownership categories.',
+        },
+        {
+          id: 'banking-emergency.insurance.credit-union',
+          kind: 'multiple_choice',
+          prompt:
+            'A credit union offers an account. How can you check whether its share deposits have federal insurance?',
+          choices: [
+            { id: 'all', label: 'Assume every credit union is federally insured' },
+            {
+              id: 'verify',
+              label:
+                'Look for the official NCUA insurance sign and verify the institution with NCUA',
+            },
+            { id: 'rate', label: 'Choose the highest advertised rate as proof of insurance' },
+          ],
+          correctChoiceId: 'verify',
+          hint: 'Some credit unions use private insurance, so check the institution rather than its marketing.',
+          explanation:
+            'NCUA provides a credit-union lookup and an official federal insurance sign. Some state-chartered credit unions are privately insured; a rate or logo unrelated to NCUA does not establish federal coverage.',
         },
       ],
     },
+    ...bankingPractice,
   ],
 };
