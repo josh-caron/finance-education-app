@@ -4,8 +4,13 @@ Tested September 27, 2026, locally on Windows with Node 24.19.0.
 
 ## Result
 
-Normal sequential progression passes. Two concurrency defects remain open and
-can inflate leaderboard XP. This is not an all-clear result.
+Normal sequential progression passes. The two XP concurrency defects found in
+the initial testing pass have now been fixed. The full API rerun passed all 83
+tests across seven files, including both original failures and the additional
+concurrency assertions. API and test TypeScript checks and formatting checks for
+the changed files also passed.
+
+The table below records the initial testing pass before the concurrency fix.
 
 | Check                                                                           | Result                   |
 | ------------------------------------------------------------------------------- | ------------------------ |
@@ -23,17 +28,21 @@ The new journey verifies 100 XP reaches level 2, both boards agree with the
 profile, prerequisites unlock, practice adds no XP, and a new week resets weekly
 rank eligibility while preserving all-time XP.
 
-## Open defects
+## Findings and resolution
 
 1. **Concurrent correct answers award XP twice.** Two simultaneous correct
    submissions for the same unsolved exercise both return 200. All-time XP is
    30 instead of 15. The route reads previous attempts before its write batch,
    allowing both requests to decide the exercise has never been solved.
+   **Fixed:** attempt numbering and XP eligibility now execute inside the atomic
+   write batch; daily and profile totals use the XP actually stored on the attempt.
 2. **Concurrent completions award the completion bonus twice.** After earning
    45 exercise XP, two simultaneous completion requests produce 85 total XP
    instead of 65. Both requests can read the lesson as unfinished before either
    writes its completion. Atomic write batches do not make the preceding reads
-   atomic. Both defects need database-level concurrency protection.
+   atomic. **Fixed:** completion uses a conditional update to claim a run once,
+   and only the successful claim updates the profile and daily activity. A
+   competing completion receives 409 without awarding another bonus.
 3. **The live local-server locked-lesson message test fails.** It expects a
    locked lesson response but receives the message for a missing resource.
    The lesson and exercise IDs exist in the source content. The local server's
@@ -41,8 +50,10 @@ rank eligibility while preserving all-time XP.
    not an established cause.
 
 Reproduction tests for the concurrency defects are in
-`apps/api/test/progression-leaderboard.test.ts`. They intentionally remain failing
-until the application defects are fixed. Application scoring code was not changed.
+`apps/api/test/progression-leaderboard.test.ts`. They remain enabled and now pass.
+Additional assertions cover response XP, attempt numbering, daily completion
+counts, replay scoring, and simultaneous activity on a new profile. Profile
+creation tolerates concurrent first requests. No database migration is required.
 
 ## Test infrastructure correction
 
