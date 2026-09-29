@@ -1,7 +1,7 @@
 import { levelForXp, toDayKey } from '@fin/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -41,9 +41,6 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [completion, setCompletion] = useState<LessonCompletion | null>(null);
-  // Snapshotted when the lesson opens so the summary can tell a level-up apart
-  // from ordinary XP gain.
-  const levelBefore = useRef(1);
 
   const lessonQuery = useQuery({
     queryKey: ['lesson', lessonId],
@@ -79,7 +76,6 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
         localDay: toDayKey(new Date()),
       }),
     onSuccess: (data) => {
-      levelBefore.current = levelFromXp(data.totalXp - data.bonus);
       setCompletion(data);
       // The skill tree and the header stats both moved.
       void queryClient.invalidateQueries({ queryKey: ['units'] });
@@ -119,7 +115,8 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
   const lesson = lessonQuery.data;
 
   if (completion) {
-    const leveledUp = completion.level > levelBefore.current;
+    // XP before this completion, so a level-up can be told apart from ordinary XP gain.
+    const leveledUp = completion.level > levelFromXp(completion.totalXp - completion.bonus);
     const celebration = getUnitCelebration(
       lesson.unitId,
       completion.firstCompletion,
