@@ -73,7 +73,7 @@ export default function LeaderboardScreen() {
           {period === 'weekly' ? (
             <ThemedText type="small" themeColor="textSecondary">
               Week starting {query.data.weekStart}. Resets Monday at 00:00 UTC; XP is grouped by
-              each learner's local activity date.
+              each learner’s local activity date.
             </ThemedText>
           ) : null}
           <View style={[styles.summary, { backgroundColor: theme.successSurface }]}>
