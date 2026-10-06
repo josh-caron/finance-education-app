@@ -568,4 +568,125 @@ export const retirementAccounts: Lesson[] = [
       },
     ],
   },
+  {
+    id: 'retirement.review',
+    title: 'Build an Account Plan',
+    intro:
+      'Compare account purpose, eligibility, tax treatment, and investment choices together. No account is best for everyone. The following fictional cases assume contribution eligibility and legal room only when explicitly stated. Use current IRS guidance and workplace-plan documents for actual limits. A contribution plan also needs room for present expenses and emergencies.',
+    exercises: [
+      {
+        id: 'retirement.review.match',
+        kind: 'multiple_choice',
+        prompt:
+          'Jordan’s employer offers a 401(k) match. Jordan is comparing it with a personal Roth IRA. What information belongs in the comparison?',
+        choices: [
+          {
+            id: 'only',
+            label: 'Only the word Roth in the account name',
+          },
+          {
+            id: 'terms',
+            label:
+              'Eligibility, match and vesting terms, tax treatment, investment costs, and the budget',
+          },
+          {
+            id: 'guarantee',
+            label: 'Which account guarantees the highest stock-market return',
+          },
+        ],
+        correctChoiceId: 'terms',
+        hint: 'Consider workplace benefits and personal constraints together.',
+        explanation:
+          'Compare the actual terms rather than selecting an account solely by its label.',
+      },
+      {
+        id: 'retirement.review.hsa',
+        kind: 'multiple_choice',
+        prompt:
+          'Morgan plans for future health costs and hears about HSAs. Which step comes before contributing?',
+        choices: [
+          {
+            id: 'check',
+            label: 'Confirm current HSA eligibility and the applicable contribution allowance',
+          },
+          {
+            id: 'any',
+            label: 'Open one based only on having medical expenses',
+          },
+          {
+            id: 'ira',
+            label: 'Treat the HSA as an IRA with no health-coverage requirements',
+          },
+        ],
+        correctChoiceId: 'check',
+        hint: 'Having medical expenses does not establish contribution eligibility.',
+        explanation:
+          'An HSA can help with health costs when its rules are met. It is not a substitute name for an IRA.',
+      },
+      {
+        id: 'retirement.review.budget',
+        kind: 'computed_answer',
+        prompt:
+          'Casey has budgeted $300 per month for personal account contributions. The plan assigns $120 to a 401(k) and $50 to an HSA. Eligibility and legal room for all contributions are confirmed. How much remains in this budget for an IRA? Ignore tax effects.',
+        answer: 300 - 120 - 50,
+        format: 'usd',
+        tolerance: {
+          type: 'absolute',
+          value: 0.01,
+        },
+        hint: 'Subtract both planned personal contributions.',
+        explanation:
+          '$300 - $120 - $50 = $130 remains. Any employer contribution is separate from this stated personal budget.',
+      },
+      {
+        id: 'retirement.review.tax',
+        kind: 'multiple_choice',
+        prompt: 'Which statement correctly describes the examples in this unit?',
+        choices: [
+          {
+            id: 'always',
+            label:
+              'Traditional IRA contributions are always deductible and all Roth withdrawals are tax-free',
+          },
+          {
+            id: 'conditional',
+            label:
+              'Traditional IRA deductibility and Roth withdrawal treatment depend on applicable rules',
+          },
+          {
+            id: 'same',
+            label: 'An HSA, IRA, and 401(k) all have identical tax and eligibility rules',
+          },
+        ],
+        correctChoiceId: 'conditional',
+        hint: 'Account labels are a starting point, not a complete tax determination.',
+        explanation:
+          'Check the relevant contribution, deduction, and distribution conditions. The accounts serve different purposes and have different rules.',
+      },
+      {
+        id: 'retirement.review.process',
+        kind: 'ordering',
+        prompt:
+          'Follow this planning sequence: first check eligibility and terms, next budget a contribution, then review investment options and costs before choosing holdings.',
+        items: [
+          {
+            id: 'invest',
+            label: 'Review available investments, risk, and fees before choosing holdings',
+          },
+          {
+            id: 'check',
+            label: 'Verify eligibility, account rules, and workplace benefits',
+          },
+          {
+            id: 'budget',
+            label: 'Set an affordable contribution within the applicable limits',
+          },
+        ],
+        correctOrder: ['check', 'budget', 'invest'],
+        hint: 'Use the sequence stated in the prompt.',
+        explanation:
+          'Start with the applicable rules, fit contributions to the budget, then make an informed investment selection. Revisit the plan as circumstances change.',
+      },
+    ],
+  },
 ];
