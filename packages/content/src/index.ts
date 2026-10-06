@@ -3,13 +3,21 @@ import { courseSchema, type Course, type Exercise, type Lesson, type Unit } from
 import { moneyBasics } from './units/01-money-basics';
 import { bankingEmergency } from './units/02-banking-emergency';
 import { budgetingSaving } from './units/00-budgeting-saving';
+import { retirement } from './units/03-retirement';
+import { healthInvesting } from './units/04-health-investing';
 
 /**
  * The course, in skill-tree order. Add a unit by importing it here; the schema
  * check below runs at import time, so a malformed unit fails fast in dev, in
  * CI, and in the seed script rather than at lesson time.
  */
-export const course: Course = courseSchema.parse([budgetingSaving, bankingEmergency, moneyBasics]);
+export const course: Course = courseSchema.parse([
+  budgetingSaving,
+  bankingEmergency,
+  moneyBasics,
+  retirement,
+  healthInvesting,
+]);
 
 export const units: Unit[] = [...course].sort((a, b) => a.order - b.order);
 

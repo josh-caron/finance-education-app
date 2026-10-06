@@ -1,4 +1,5 @@
 import { compoundBalance, creditUtilization, type Unit } from '@fin/core';
+import { compoundingPractice, creditPractice, moneyPractice } from './money-basics-practice';
 
 /**
  * Third unit on the skill tree. Locked until banking and emergency savings is
@@ -9,7 +10,7 @@ import { compoundBalance, creditUtilization, type Unit } from '@fin/core';
  */
 export const moneyBasics: Unit = {
   id: 'money-basics',
-  title: 'Money Basics',
+  title: 'Interest, Credit, and Inflation',
   description: 'Interest, inflation, and the habits that decide what your money is worth later.',
   order: 2,
   prerequisites: ['banking-emergency'],
@@ -18,7 +19,7 @@ export const moneyBasics: Unit = {
       id: 'money-basics.compounding',
       title: 'Compounding',
       intro:
-        'Interest earns interest. Over long horizons that second-order effect, not the deposit, is where most of the balance comes from.',
+        'Compound interest adds earnings to the balance used for the next interest calculation. For annual compounding, balance = deposit × (1 + annual rate)^years. The rate and time both matter. These examples use hypothetical constant rates with no fees, taxes, deposits, or withdrawals unless stated; they are not investment forecasts.',
       exercises: [
         {
           kind: 'multiple_choice',
@@ -50,24 +51,25 @@ export const moneyBasics: Unit = {
           kind: 'ordering',
           id: 'money-basics.compounding.growth-order',
           prompt:
-            'Order these $1,000 deposits by ending balance after 20 years, smallest to largest.',
+            'Order these hypothetical $1,000 balances after 20 years, smallest to largest. Assume the stated rate stays constant and compounds annually, with no other activity. These are math scenarios, not promised investment returns.',
           items: [
-            { id: 'savings', label: '0.5% savings account' },
-            { id: 'bond', label: '4% bond fund' },
-            { id: 'index', label: '8% index fund' },
+            { id: 'savings', label: 'Scenario A: constant 0.5% annual growth' },
+            { id: 'bond', label: 'Scenario B: constant 4% annual growth' },
+            { id: 'index', label: 'Scenario C: constant 8% annual growth' },
           ],
           correctOrder: ['savings', 'bond', 'index'],
           hint: 'A higher annual rate grows the same $1,000 farther over 20 years.',
           explanation:
-            'The gap widens with time: $1,105 versus $2,191 versus $4,661. A few percentage points compound into multiples over decades.',
+            'The model gives about $1,105, $2,191, and $4,661 respectively. Actual investment returns vary and can be negative.',
         },
+        ...compoundingPractice,
       ],
     },
     {
       id: 'money-basics.credit-utilization',
       title: 'Credit Utilization',
       intro:
-        'Utilization is the share of your available credit you are using. After payment history it is the largest input to a credit score, and unlike history it changes month to month.',
+        'Utilization is the balance owed divided by the credit limit, multiplied by 100. For several cards, divide total balances by total limits. It is one input to credit scores, not a score itself. Reporting dates and scoring models differ, so no single ratio guarantees a score.',
       exercises: [
         {
           kind: 'computed_answer',
@@ -79,7 +81,7 @@ export const moneyBasics: Unit = {
           tolerance: { type: 'absolute', value: 0.1 },
           hint: 'Utilization = balance / limit x 100',
           explanation:
-            '625 / 2500 = 25%. Staying under 30% is the usual guidance, and under 10% scores best.',
+            '$625 / $2,500 × 100 = 25%. This ratio describes the stated balance and limit; it does not guarantee a particular score.',
         },
         {
           kind: 'multiple_choice',
@@ -96,7 +98,9 @@ export const moneyBasics: Unit = {
           explanation:
             'Closing a card removes its limit from the denominator. The same $500 against $1,500 of remaining credit is 33% utilization.',
         },
+        ...creditPractice,
       ],
     },
+    ...moneyPractice,
   ],
 };
