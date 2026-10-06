@@ -1,6 +1,6 @@
 # Research sources
 
-Authoritative sites used to sequence and fact-check the first two learning
+Authoritative sites used to sequence and fact-check the learning
 units. Lesson dollar amounts and stories are original; these pages supply the
 concepts, not quotations.
 
@@ -36,6 +36,35 @@ Unit 1's review applies the same toolkit's budget and bill-calendar concepts.
 - **Bank fees.** Overdraft and ATM fees are set by each institution. Exercises use only the fee written in that question.
 - **“You must save 3–6 months.”** Older worksheets sometimes treat that as a true/false fact. CFPB current guidance does not require a fixed month count to start; we teach a small first goal, then optional months-of-essentials math.
 
-## Starter unit (compounding and credit)
+## Unit 3 and retirement accounts
 
-The short `money-basics` unit is an existing demo of the three exercise types. It is not a full investing or credit course. Utilization and compounding examples use `@fin/core` helpers rather than a live rate table.
+### Account expansion — checked October 5, 2026
+
+| Source                                                                                                                                                   | Use                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [IRS: 401(k) plan overview](https://www.irs.gov/retirement-plans/plan-sponsor/401k-plan-overview)                                                        | Payroll deferrals, pre-tax treatment, and designated Roth contributions.                                 |
+| [IRS: Roth comparison chart](https://www.irs.gov/retirement-plans/roth-comparison-chart)                                                                 | Roth workplace accounts versus Roth IRAs and shared contribution limits.                                 |
+| [IRS: IRA FAQs](https://www.irs.gov/retirement-plans/retirement-plans-faqs-regarding-iras)                                                               | Contribution eligibility, deductions, and combined IRA contributions.                                    |
+| [IRS: Topic 451](https://www.irs.gov/taxtopics/tc451)                                                                                                    | Traditional and Roth treatment and nondeductible basis reporting.                                        |
+| [IRS: Publication 590-B](https://www.irs.gov/publications/p590b)                                                                                         | Qualified Roth IRA distributions, five-tax-year rules, and treatment of contributions and earnings.      |
+| [IRS: Publication 969](https://www.irs.gov/publications/p969)                                                                                            | HSA eligibility, medical reimbursement documentation, carryforward, and nonmedical withdrawals after 65. |
+| [SEC Investor.gov: Index funds](https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-4) | Investments can have fees and risk inside tax-advantaged accounts.                                       |
+
+The account lessons avoid annual dollar limits and income phaseout figures.
+Check current eligibility guidance; a plan's deductible alone does not establish
+HSA eligibility. State income-tax rules are not modeled.
+
+### Foundations
+
+The following sources were checked October 5, 2026. The original CFPB source
+approach continues for credit; SEC, DOL, and IRS resources extend coverage to
+growth, inflation, and retirement. See [the lesson map](money-basics-retirement-module.md).
+
+| Source                                                                                                                                                                                           | Use                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| [CFPB: Paying off a credit card and credit scores](https://www.consumerfinance.gov/ask-cfpb/will-paying-off-my-credit-card-balance-every-month-improve-my-score-en-1293/)                        | Utilization, reporting timing, and limits of score predictions.                           |
+| [CFPB: Credit-card grace periods](https://www.consumerfinance.gov/ask-cfpb/what-is-a-grace-period-for-a-credit-card-en-47/)                                                                      | Conditional avoidance of purchase interest; minimum payments are not full repayment.      |
+| [SEC Investor.gov: Compound interest](https://www.investor.gov/introduction-investing/investing-basics/glossary/compound-interest)                                                               | Interest on accumulated interest; original constant-rate illustrations.                   |
+| [SEC Investor.gov: Asset allocation guide](https://www.investor.gov/additional-resources/general-resources/publications-research/info-sheets/beginners-guide-asset)                              | Inflation risk and the distinction between an illustration and investment uncertainty.    |
+| [DOL: What you should know about your retirement plan](https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/what-you-should-know-about-your-retirement-plan) | Workplace contributions, plan-specific matching terms, and plan documents.                |
+| [IRS: Retirement topics—vesting](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-vesting)                                                                       | Ownership of employee contributions and plan-dependent vesting of employer contributions. |
