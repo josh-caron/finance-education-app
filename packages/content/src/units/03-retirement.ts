@@ -1,10 +1,11 @@
 import { compoundBalance, type Unit } from '@fin/core';
+import { retirementAccounts } from './retirement-accounts';
 
-// Initial retirement foundations; see docs/money-basics-retirement-module.md.
+// Retirement foundations and account choices; see docs/money-basics-retirement-module.md.
 export const retirement: Unit = {
   id: 'retirement',
-  title: 'Retirement: Getting Started',
-  description: 'Explore saving over time and learn how workplace contributions and vesting work.',
+  title: 'Retirement and Tax-Advantaged Accounts',
+  description: 'Compare 401(k)s, traditional and Roth IRAs, HSAs, investment choices, and fees.',
   order: 3,
   prerequisites: ['money-basics'],
   lessons: [
@@ -209,5 +210,6 @@ export const retirement: Unit = {
         },
       ],
     },
+    ...retirementAccounts,
   ],
 };
