@@ -460,4 +460,112 @@ export const retirementAccounts: Lesson[] = [
       },
     ],
   },
+  {
+    id: 'retirement.investments',
+    title: 'Accounts, Investments, and Fees',
+    intro:
+      'An account sets rules for holding money; the investments inside it determine exposure to market gains and losses. Opening or funding an IRA does not by itself select a fund. Diversification spreads exposure but cannot prevent every loss. Compare investment options, ongoing costs, risk, and time horizon. Index funds can have costs too. The fee calculations below use fixed illustrative balances, not forecasts.',
+    exercises: [
+      {
+        id: 'retirement.investments.wrapper',
+        kind: 'multiple_choice',
+        prompt: 'Riley opens an IRA and deposits cash. What should Riley check next?',
+        choices: [
+          {
+            id: 'automatic',
+            label: 'Assume the account name automatically buys a diversified stock fund',
+          },
+          {
+            id: 'holdings',
+            label: 'Check the actual holdings and available investments, risks, and costs',
+          },
+          {
+            id: 'insured',
+            label: 'Assume every investment in the IRA is insured against market losses',
+          },
+        ],
+        correctChoiceId: 'holdings',
+        hint: 'Separate the type of account from what it holds.',
+        explanation:
+          'An IRA may hold cash or selected investments. The account label does not guarantee either investment selection or performance.',
+      },
+      {
+        id: 'retirement.investments.diversify',
+        kind: 'multiple_choice',
+        prompt: 'Which statement about a diversified investment mix is most accurate?',
+        choices: [
+          {
+            id: 'zero',
+            label: 'It removes all investment risk',
+          },
+          {
+            id: 'spread',
+            label: 'It spreads exposure across investments but can still lose value',
+          },
+          {
+            id: 'one',
+            label: 'It requires putting all savings into one employer’s stock',
+          },
+        ],
+        correctChoiceId: 'spread',
+        hint: 'Spreading exposure is different from guaranteeing a result.',
+        explanation:
+          'Diversification can reduce concentration risk. It does not make market losses impossible.',
+      },
+      {
+        id: 'retirement.investments.fee',
+        kind: 'computed_answer',
+        prompt:
+          'For a simplified estimate, a fund charges 0.20% annually on a constant $10,000 balance. What is the annual fee in dollars? Ignore other costs and balance changes.',
+        answer: 10000 * 0.002,
+        format: 'usd',
+        tolerance: {
+          type: 'absolute',
+          value: 0.01,
+        },
+        hint: 'Convert 0.20% to 0.002 before multiplying.',
+        explanation:
+          '$10,000 × 0.002 = $20. Actual charges depend on the product and balance over time.',
+      },
+      {
+        id: 'retirement.investments.difference',
+        kind: 'computed_answer',
+        prompt:
+          'On the same constant $10,000 balance, Fund A costs 0.20% annually and Fund B costs 1.00%. What is the annual fee difference? Ignore other costs.',
+        answer: 10000 * (0.01 - 0.002),
+        format: 'usd',
+        tolerance: {
+          type: 'absolute',
+          value: 0.01,
+        },
+        hint: 'Calculate both annual dollar costs, then subtract.',
+        explanation:
+          'Fund A costs $20 and Fund B costs $100: an $80 difference. Fees are one comparison factor, not the only one.',
+      },
+      {
+        id: 'retirement.investments.order',
+        kind: 'ordering',
+        prompt:
+          'Rank the stated annual costs on identical constant $10,000 balances, lowest to highest. Ignore all other charges.',
+        items: [
+          {
+            id: 'high',
+            label: 'Fund C: 1.00% per year',
+          },
+          {
+            id: 'low',
+            label: 'Fund A: 0.10% per year',
+          },
+          {
+            id: 'middle',
+            label: 'Fund B: 0.50% per year',
+          },
+        ],
+        correctOrder: ['low', 'middle', 'high'],
+        hint: 'Convert each percentage to a cost on the same balance.',
+        explanation:
+          'The costs are $10, $50, and $100. This comparison holds the balances and other charges equal.',
+      },
+    ],
+  },
 ];
