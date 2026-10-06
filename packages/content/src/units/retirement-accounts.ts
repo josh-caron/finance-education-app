@@ -222,4 +222,123 @@ export const retirementAccounts: Lesson[] = [
       },
     ],
   },
+  {
+    id: 'retirement.roth-ira',
+    title: 'Roth IRA Basics',
+    intro:
+      'Roth IRA contributions are not deductible. Direct contribution eligibility depends on taxable compensation, income, and filing status. Qualified withdrawals, including earnings, are federally tax-free. For the retirement examples here, qualification requires the Roth IRA five-tax-year period and age 59½; other qualifying circumstances exist. Regular contributions, conversions, and earnings have different withdrawal rules. Do not assume every early withdrawal is tax-free.',
+    exercises: [
+      {
+        id: 'retirement.roth-ira.contribution',
+        kind: 'multiple_choice',
+        prompt: 'Which describes the federal tax treatment of a regular Roth IRA contribution?',
+        choices: [
+          {
+            id: 'deduct',
+            label: 'It always creates a current income-tax deduction',
+          },
+          {
+            id: 'after',
+            label: 'It is made without a current income-tax deduction',
+          },
+          {
+            id: 'employer',
+            label: 'It must be an employer matching contribution',
+          },
+        ],
+        correctChoiceId: 'after',
+        hint: 'Roth treatment does not start with a deduction for the contribution.',
+        explanation:
+          'Regular Roth IRA contributions are not deductible. Qualified distribution treatment is a separate benefit.',
+      },
+      {
+        id: 'retirement.roth-ira.qualified',
+        kind: 'multiple_choice',
+        prompt:
+          'Alex is 62 and made the first Roth IRA contribution for tax year 2020. In 2026, Alex withdraws funds including earnings. Assume all other requirements are met. Does this satisfy the age and five-tax-year tests for a qualified distribution?',
+        choices: [
+          {
+            id: 'yes',
+            label: 'Yes; both the stated age and five-tax-year requirements are met',
+          },
+          {
+            id: 'age',
+            label: 'No; age 70 is always required',
+          },
+          {
+            id: 'earnings',
+            label: 'No; Roth IRA earnings are always federally taxable',
+          },
+        ],
+        correctChoiceId: 'yes',
+        hint: 'Check both conditions rather than age alone.',
+        explanation:
+          'Age 62 exceeds 59½, and the five-tax-year period starting in 2020 has passed by 2026. Under the stated assumptions, the distribution is qualified.',
+      },
+      {
+        id: 'retirement.roth-ira.early',
+        kind: 'multiple_choice',
+        prompt:
+          'A 30-year-old with a newly opened Roth IRA wants to withdraw everything, including earnings. What should they do first?',
+        choices: [
+          {
+            id: 'all',
+            label: 'Assume every dollar is automatically free of tax and additional tax',
+          },
+          {
+            id: 'check',
+            label: 'Check withdrawal ordering, qualification rules, and any applicable exceptions',
+          },
+          {
+            id: 'same',
+            label: 'Use Roth 401(k) rules as if they were identical',
+          },
+        ],
+        correctChoiceId: 'check',
+        hint: 'Contribution dollars and investment earnings do not have identical withdrawal rules.',
+        explanation:
+          'Check the rules for the actual account and distribution. The word Roth alone does not settle the treatment of an early withdrawal.',
+      },
+      {
+        id: 'retirement.roth-ira.remaining',
+        kind: 'computed_answer',
+        prompt:
+          'Taylor sets a personal IRA contribution budget of $3,000, with eligibility and legal contribution room already confirmed. After depositing $1,200, how much of that personal budget remains?',
+        answer: 3000 - 1200,
+        format: 'usd',
+        tolerance: {
+          type: 'absolute',
+          value: 0.01,
+        },
+        hint: 'Subtract deposits already made from the personal budget.',
+        explanation:
+          '$3,000 - $1,200 = $1,800. This is a personal target, not the IRS annual contribution limit.',
+      },
+      {
+        id: 'retirement.roth-ira.combined',
+        kind: 'multiple_choice',
+        prompt:
+          'You contribute to both a traditional IRA and a Roth IRA in the same tax year. Which statement is correct?',
+        choices: [
+          {
+            id: 'separate',
+            label: 'Each account gives you a separate full annual IRA contribution allowance',
+          },
+          {
+            id: 'shared',
+            label:
+              'Regular contributions share an applicable combined IRA limit; other eligibility rules still apply',
+          },
+          {
+            id: 'none',
+            label: 'Opening two accounts removes all income requirements',
+          },
+        ],
+        correctChoiceId: 'shared',
+        hint: 'The number of IRA accounts does not multiply the annual allowance.',
+        explanation:
+          'Traditional and Roth IRA regular contributions count together toward the applicable IRA limit. Direct Roth contribution eligibility must also be checked.',
+      },
+    ],
+  },
 ];
