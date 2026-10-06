@@ -341,4 +341,123 @@ export const retirementAccounts: Lesson[] = [
       },
     ],
   },
+  {
+    id: 'retirement.hsa',
+    title: 'HSA: Health Costs Now and Later',
+    intro:
+      'A health savings account (HSA) is a medical savings account, not an IRA. Contributions require HSA eligibility, including qualifying coverage, no disqualifying other coverage, no Medicare enrollment, and not being claimable as another taxpayer’s dependent. Federal tax advantages can apply to eligible contributions, earnings, and qualified medical withdrawals. Unused funds carry forward. Verify current eligibility rules; a large deductible alone is not proof. State tax treatment can differ.',
+    exercises: [
+      {
+        id: 'retirement.hsa.eligible',
+        kind: 'multiple_choice',
+        prompt:
+          'Pat sees a health plan with a large deductible. Is that alone enough to confirm eligibility to contribute to an HSA?',
+        choices: [
+          {
+            id: 'yes',
+            label: 'Yes; every large-deductible plan automatically qualifies',
+          },
+          {
+            id: 'check',
+            label: 'No; verify HSA-eligible coverage and the other eligibility requirements',
+          },
+          {
+            id: 'age',
+            label: 'Yes; being over 18 is the only other requirement',
+          },
+        ],
+        correctChoiceId: 'check',
+        hint: 'The deductible amount is only one part of eligibility.',
+        explanation:
+          'Confirm coverage and personal eligibility rather than relying on the plan’s price label.',
+      },
+      {
+        id: 'retirement.hsa.receipt',
+        kind: 'multiple_choice',
+        prompt:
+          'A qualified medical expense was incurred after the HSA was established and has not been reimbursed or deducted elsewhere. What supports a tax-free HSA reimbursement?',
+        choices: [
+          {
+            id: 'records',
+            label:
+              'Keep documentation showing the expense qualifies and was not reimbursed elsewhere',
+          },
+          {
+            id: 'twice',
+            label: 'Have insurance reimburse it too, then keep both payments',
+          },
+          {
+            id: 'any',
+            label: 'Treat any personal purchase as medical spending',
+          },
+        ],
+        correctChoiceId: 'records',
+        hint: 'The same expense cannot receive duplicate tax-favored reimbursement.',
+        explanation:
+          'Keep receipts and eligibility records. Medical use must meet the applicable requirements.',
+      },
+      {
+        id: 'retirement.hsa.balance',
+        kind: 'computed_answer',
+        prompt:
+          'An HSA holds $1,500. Its owner pays a $350 qualified medical bill from it. With no other activity, what remains?',
+        answer: 1500 - 350,
+        format: 'usd',
+        tolerance: {
+          type: 'absolute',
+          value: 0.01,
+        },
+        hint: 'Subtract the medical payment from the account balance.',
+        explanation: '$1,500 - $350 = $1,150 remains for later use.',
+      },
+      {
+        id: 'retirement.hsa.carry',
+        kind: 'multiple_choice',
+        prompt: 'What happens to unused HSA funds at year-end?',
+        choices: [
+          {
+            id: 'lost',
+            label: 'They are automatically forfeited every year',
+          },
+          {
+            id: 'remain',
+            label: 'They stay in the account for future use',
+          },
+          {
+            id: 'convert',
+            label: 'They automatically convert into a Roth IRA',
+          },
+        ],
+        correctChoiceId: 'remain',
+        hint: 'An HSA is not a use-it-or-lose-it spending allowance.',
+        explanation:
+          'Unused HSA funds carry forward; the account also stays with its owner after a job change.',
+      },
+      {
+        id: 'retirement.hsa.after65',
+        kind: 'multiple_choice',
+        prompt:
+          'At age 67, an HSA owner withdraws money for a vacation, not qualified medical expenses. Under federal rules, which treatment generally applies?',
+        choices: [
+          {
+            id: 'free',
+            label: 'No income tax because the owner is over 65',
+          },
+          {
+            id: 'income',
+            label:
+              'Ordinary income tax applies, but the additional 20% nonmedical-distribution tax does not',
+          },
+          {
+            id: 'extra',
+            label: 'Only the additional 20% tax applies, with no income tax',
+          },
+        ],
+        correctChoiceId: 'income',
+        hint: 'Removing an additional tax is not the same as removing ordinary income tax.',
+        explanation:
+          'After age 65, nonmedical distributions remain taxable income but avoid the additional 20% tax. Qualified medical withdrawals are treated differently.',
+      },
+    ],
+  },
 ];
