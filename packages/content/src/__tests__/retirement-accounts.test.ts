@@ -1,8 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { gradeExercise, isUnitComplete } from '@fin/core';
+import { gradeExercise, isUnitComplete, isUnitUnlocked } from '@fin/core';
 import { findExercise, findUnit } from '../index';
 
 describe('retirement account practice', () => {
+  it('unlocks Unit 5 only after all foundations and keeps moved lesson progress usable', () => {
+    const foundations = findUnit('retirement')!;
+    const next = findUnit('health-investing')!;
+    const graph = {
+      prerequisitesByUnit: new Map([[next.id, next.prerequisites]]),
+      lessonsByUnit: new Map(
+        [foundations, next].map((unit) => [unit.id, unit.lessons.map((lesson) => lesson.id)]),
+      ),
+    };
+    const done = new Set(foundations.lessons.map((lesson) => lesson.id));
+    for (const lesson of foundations.lessons) {
+      const missing = new Set(done);
+      missing.delete(lesson.id);
+      expect(isUnitUnlocked(next.id, graph, missing), lesson.id).toBe(false);
+    }
+    expect(isUnitUnlocked(next.id, graph, done)).toBe(true);
+    expect(isUnitComplete(next.id, graph.lessonsByUnit, done)).toBe(false);
+    for (const id of ['retirement.hsa', 'retirement.investments', 'retirement.review'])
+      done.add(id);
+    expect(isUnitComplete(next.id, graph.lessonsByUnit, done)).toBe(true);
+  });
   it.each([
     ['401k.pay', 200, 5],
     ['401k.tax-example', 40, 200],

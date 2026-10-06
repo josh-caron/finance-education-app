@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/screen';
@@ -14,6 +15,7 @@ import type { LearnerProfile, UnitSummary } from '@/lib/api-types';
  * what it is waiting on rather than hiding itself.
  */
 export default function LearnScreen() {
+  const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({});
   const unitsQuery = useQuery({
     queryKey: ['units'],
     queryFn: () => apiFetch<{ units: UnitSummary[] }>('/api/content/units'),
@@ -23,6 +25,10 @@ export default function LearnScreen() {
     queryKey: ['profile'],
     queryFn: () => apiFetch<LearnerProfile>('/api/progress/me'),
   });
+
+  const currentUnit = unitsQuery.data?.units.find(
+    (unit) => unit.unlocked && unit.lessons.some((lesson) => lesson.status !== 'completed'),
+  );
 
   return (
     <Screen>
@@ -50,7 +56,18 @@ export default function LearnScreen() {
       ) : null}
 
       {unitsQuery.data?.units.map((unit) => (
-        <UnitCard key={unit.id} unit={unit} units={unitsQuery.data.units} />
+        <UnitCard
+          key={unit.id}
+          unit={unit}
+          units={unitsQuery.data.units}
+          expanded={expandedUnits[unit.id] ?? unit.id === currentUnit?.id}
+          onToggle={() =>
+            setExpandedUnits((previous) => ({
+              ...previous,
+              [unit.id]: !(previous[unit.id] ?? unit.id === currentUnit?.id),
+            }))
+          }
+        />
       ))}
     </Screen>
   );

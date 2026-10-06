@@ -4,6 +4,7 @@ import { moneyBasics } from './units/01-money-basics';
 import { bankingEmergency } from './units/02-banking-emergency';
 import { budgetingSaving } from './units/00-budgeting-saving';
 import { retirement } from './units/03-retirement';
+import { healthInvesting } from './units/04-health-investing';
 
 /**
  * The course, in skill-tree order. Add a unit by importing it here; the schema
@@ -15,6 +16,7 @@ export const course: Course = courseSchema.parse([
   bankingEmergency,
   moneyBasics,
   retirement,
+  healthInvesting,
 ]);
 
 export const units: Unit[] = [...course].sort((a, b) => a.order - b.order);

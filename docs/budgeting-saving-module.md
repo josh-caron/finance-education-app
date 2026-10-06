@@ -26,7 +26,7 @@ The examples are original. Background concepts follow these CFPB resources:
 
 Run `pnpm db:seed:local` to publish authored content to the local database, then
 restart or refresh the app. After the banking module, the course should contain
-four units, 24 lessons, and 122 exercises. Seeding upserts course rows by id.
+five units, 24 lessons, and 122 exercises. Seeding upserts course rows by id.
 Removed exercise ids still cascade-delete their attempts. Do not seed production
 as part of this preview.
 

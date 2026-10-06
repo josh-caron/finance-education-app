@@ -1,8 +1,9 @@
 # Unit 3 and retirement accounts
 
 Unit 3, **Interest, Credit, and Inflation**, now has five lessons and 25 exercises.
-Unit 4, **Retirement and Tax-Advantaged Accounts**, has eight lessons and 40
-exercises. The course currently contains four units, 24 lessons, and 122 exercises.
+Unit 4, **Retirement Foundations**, has five lessons and 25 exercises.
+Unit 5, **Health Savings and Investment Choices**, has three lessons and 15 exercises.
+The course currently contains five units, 24 lessons, and 122 exercises.
 
 ## Lesson and source map
 
@@ -16,7 +17,7 @@ exercises. The course currently contains four units, 24 lessons, and 122 exercis
 | 4    | Why Start Planning Now?             | Relate affordable contributions and time to illustrative future balances.     | SEC Investor.gov compound interest and DOL retirement-plan guide |
 | 4    | Workplace Contributions and Vesting | Calculate a capped employer match and the vested portion of a balance.        | DOL retirement-plan guide and IRS vesting guidance               |
 
-The six additional Unit 4 lessons cover:
+The account lessons across Units 4 and 5 cover:
 
 | Lesson                          | Outcome                                                                                         | Source                                                      |
 | ------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -45,11 +46,21 @@ records. Learners who already completed the original two lessons must complete
 the three new Unit 3 lessons to unlock retirement. They can revisit the earlier
 lessons for the additional practice.
 
-The two existing retirement lesson IDs and ten exercise IDs are preserved.
-Learners who completed the original introduction retain those records and finish
-the six new lessons to complete the expanded unit. Advanced topics such as
+Unit 4 contains planning, workplace contributions, 401(k), traditional IRA, and
+Roth IRA lessons. Unit 5 contains HSA, investments and fees, and the account review;
+it unlocks after all five Unit 4 lessons are complete. All lesson and exercise IDs
+are preserved, including the `retirement.*` IDs now assigned to Unit 5. Seeding
+moves these lesson records without deleting their attempts or completion history.
+Advanced topics such as
 rollovers, conversions, required distributions, and detailed withdrawal exceptions
 remain outside this beginner unit.
+
+The Learn page initially expands the first unlocked unit with unfinished lessons.
+Other units show compact summaries with completion counts and numbered unlock
+requirements. Learners can expand or collapse any unit; expanding a locked unit
+previews its lessons without enabling lesson navigation. When all units are
+complete, all cards start collapsed. Explicit toggles persist while the Learn
+screen remains mounted.
 
 ## Verification and local preview
 
@@ -95,3 +106,15 @@ XP rose from 660 to 1,230, matching six first-pass lesson awards of 95 XP.
 
 The expanded automated content and unlock suite passed 124 tests. Content
 typechecking and Prettier checks passed. No production data was changed.
+
+### Five-unit split and compact Learn page — October 5, 2026
+
+Verified that the original QA learner retained all 24 completed lessons and
+1,230 XP after the split, with all cards initially collapsed. Unit 5's moved
+lessons retained their scores and links. Expanding and collapsing cards worked.
+A new QA learner saw only Unit 1 expanded; expanded locked units had no navigable
+lesson links. After preparing that learner one lesson short of Unit 4 completion,
+finishing Roth IRA in the browser showed the five-lesson unit celebration and
+announced Unit 5. Returning to Learn automatically collapsed Unit 4 and expanded
+Unit 5. All 125 content/unlock tests, ten seed-preservation tests, and mobile and
+content typechecks passed. Native-device checks remain outstanding.

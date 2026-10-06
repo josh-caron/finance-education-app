@@ -90,12 +90,19 @@ describe('interest, credit, inflation, and retirement answer keys', () => {
     }
   });
 
-  it('provides five full Unit 3 lessons and eight playable retirement lessons', () => {
+  it('provides five Unit 3 lessons and splits retirement into five plus three lessons', () => {
     const unitThree = units.find((unit) => unit.id === 'money-basics')!;
     const unitFour = units.find((unit) => unit.id === 'retirement')!;
+    const unitFive = units.find((unit) => unit.id === 'health-investing')!;
     expect(unitThree.lessons).toHaveLength(5);
-    expect(unitFour.lessons).toHaveLength(8);
-    for (const lesson of [...unitThree.lessons, ...unitFour.lessons]) {
+    expect(unitFour.lessons).toHaveLength(5);
+    expect(unitFive.lessons).toHaveLength(3);
+    expect(unitFive.lessons.map((lesson) => lesson.id)).toEqual([
+      'retirement.hsa',
+      'retirement.investments',
+      'retirement.review',
+    ]);
+    for (const lesson of [...unitThree.lessons, ...unitFour.lessons, ...unitFive.lessons]) {
       expect(lesson.intro?.length, lesson.id).toBeGreaterThan(40);
       expect(lesson.exercises, lesson.id).toHaveLength(5);
       for (const exercise of lesson.exercises) {

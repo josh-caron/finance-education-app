@@ -7,11 +7,22 @@ import { useTheme } from '@/hooks/use-theme';
 import type { UnitSummary } from '@/lib/api-types';
 
 /** One node of the skill tree: a unit and its lessons. */
-export function UnitCard({ unit, units }: { unit: UnitSummary; units: UnitSummary[] }) {
+export function UnitCard({
+  unit,
+  units,
+  expanded,
+  onToggle,
+}: {
+  unit: UnitSummary;
+  units: UnitSummary[];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const theme = useTheme();
-  const requiredTitles = unit.prerequisites.map(
-    (id) => units.find((item) => item.id === id)?.title ?? id,
+  const requiredUnits = unit.prerequisites.map(
+    (id) => `Unit ${units.findIndex((item) => item.id === id) + 1}`,
   );
+  const completed = unit.lessons.filter((lesson) => lesson.status === 'completed').length;
   // `order` is a sort key and starts at 0, so number units by their position in
   // the tree instead. The API already returns them in tree order.
   const position = units.findIndex((item) => item.id === unit.id) + 1;
@@ -20,29 +31,46 @@ export function UnitCard({ unit, units }: { unit: UnitSummary; units: UnitSummar
     <View
       style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
     >
-      <ThemedText type="smallBold" themeColor={unit.unlocked ? 'brand' : 'locked'}>
-        {`Unit ${position}`}
-      </ThemedText>
-
-      {!unit.unlocked ? (
-        <ThemedText type="small" themeColor="locked">
-          {`Locked · finish ${requiredTitles.join(', ')}`}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Unit ${position}: ${unit.title}`}
+        accessibilityState={{ expanded }}
+        accessibilityHint={expanded ? 'Hide lessons' : 'Show lessons'}
+        onPress={onToggle}
+        style={styles.summary}
+      >
+        <View style={styles.summaryHeading}>
+          <ThemedText type="smallBold" themeColor={unit.unlocked ? 'brand' : 'locked'}>
+            {`Unit ${position}`}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {expanded ? 'Hide lessons −' : 'Show lessons +'}
+          </ThemedText>
+        </View>
+        <ThemedText type="default" style={styles.title}>
+          {unit.title}
         </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {`${completed} of ${unit.lessons.length} lessons complete`}
+        </ThemedText>
+        {!unit.unlocked ? (
+          <ThemedText type="small" themeColor="locked">
+            {`Complete ${requiredUnits.join(', ')} to unlock`}
+          </ThemedText>
+        ) : null}
+      </Pressable>
+      {expanded ? (
+        <>
+          <ThemedText type="small" themeColor="textSecondary">
+            {unit.description}
+          </ThemedText>
+          <View style={styles.lessons}>
+            {unit.lessons.map((lesson) => (
+              <LessonRow key={lesson.id} lesson={lesson} locked={!unit.unlocked} />
+            ))}
+          </View>
+        </>
       ) : null}
-
-      <ThemedText type="default" style={styles.title}>
-        {unit.title}
-      </ThemedText>
-
-      <ThemedText type="small" themeColor="textSecondary">
-        {unit.description}
-      </ThemedText>
-
-      <View style={styles.lessons}>
-        {unit.lessons.map((lesson) => (
-          <LessonRow key={lesson.id} lesson={lesson} locked={!unit.unlocked} />
-        ))}
-      </View>
     </View>
   );
 }
@@ -94,6 +122,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   title: { fontWeight: '700' },
+  summary: { gap: Spacing.two },
+  summaryHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
   lessons: { gap: Spacing.two, marginTop: Spacing.two },
   lesson: {
     flexDirection: 'row',

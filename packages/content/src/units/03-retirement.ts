@@ -4,8 +4,8 @@ import { retirementAccounts } from './retirement-accounts';
 // Retirement foundations and account choices; see docs/money-basics-retirement-module.md.
 export const retirement: Unit = {
   id: 'retirement',
-  title: 'Retirement and Tax-Advantaged Accounts',
-  description: 'Compare 401(k)s, traditional and Roth IRAs, HSAs, investment choices, and fees.',
+  title: 'Retirement Foundations',
+  description: 'Build a retirement plan and compare workplace benefits, 401(k)s, and IRAs.',
   order: 3,
   prerequisites: ['money-basics'],
   lessons: [
@@ -210,6 +210,6 @@ export const retirement: Unit = {
         },
       ],
     },
-    ...retirementAccounts,
+    ...retirementAccounts.slice(0, 3),
   ],
 };
