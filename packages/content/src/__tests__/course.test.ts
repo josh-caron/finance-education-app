@@ -54,6 +54,7 @@ describe('course integrity', () => {
       'budgeting-saving',
       'banking-emergency',
       'money-basics',
+      'retirement',
     ]);
   });
 
