@@ -274,9 +274,15 @@ that lesson payloads carry no answer keys.
 pnpm dev:mobile
 ```
 
-Press `w` for web, `i` for iOS, `a` for Android. On a physical device set
-`EXPO_PUBLIC_API_URL` in `apps/mobile/.env.local` to your machine's LAN IP;
-`localhost` there means the phone itself.
+Press `w` for web, `i` for iOS, `a` for Android.
+
+On a physical device with Expo Go, start the API with `pnpm dev:api:lan`, which
+listens on every interface rather than only `localhost`. In development the app
+rewrites a `localhost` API URL to the address Metro is serving from, so nothing
+needs editing. Sign-in works because local `TRUSTED_ORIGINS` includes `exp://`,
+the origin Expo Go reports. Production does not trust `exp://`, so Expo Go
+cannot sign in against the deployed API; a real build uses `fineduapp://`.
+An older `apps/api/.dev.vars` needs `exp://` added to `TRUSTED_ORIGINS` by hand.
 
 When Metro serves something stale, which it does after dependency changes:
 

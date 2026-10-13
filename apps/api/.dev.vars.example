@@ -7,4 +7,4 @@
 # Generate a secret with: openssl rand -base64 32
 BETTER_AUTH_SECRET="replace-me-with-a-random-32-byte-secret"
 BETTER_AUTH_URL="http://localhost:8787"
-TRUSTED_ORIGINS="http://localhost:8081,http://localhost:8787,fineduapp://"
+TRUSTED_ORIGINS="http://localhost:8081,http://localhost:8787,fineduapp://,exp://"

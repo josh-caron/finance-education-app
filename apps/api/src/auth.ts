@@ -111,7 +111,13 @@ export function createAuth(env: Bindings, db: Database, ctx?: BackgroundTasks) {
       }),
     },
 
-    advanced: ctx ? { backgroundTasks: { handler: (task) => ctx.waitUntil(task) } } : undefined,
+    advanced: {
+      // Better Auth skips the origin check when NODE_ENV is "test", which would
+      // leave the tests unable to see a CSRF regression. Production already
+      // enforces it; saying so explicitly makes the tests enforce it too.
+      disableOriginCheck: false,
+      ...(ctx ? { backgroundTasks: { handler: (task) => ctx.waitUntil(task) } } : {}),
+    },
 
     plugins: [expo()],
     trustedOrigins: env.TRUSTED_ORIGINS.split(',')
