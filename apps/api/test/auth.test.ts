@@ -425,3 +425,45 @@ describe('account deletion', () => {
     expect(again.status).toBe(200);
   });
 });
+
+describe('native origins', () => {
+  // Expo Go reports its origin as exp://<laptop address>:8081, unlike a built app,
+  // which uses the fineduapp:// scheme. Only local development trusts exp://.
+  const expoGo = 'exp://192.168.1.20:8081';
+
+  async function signInFrom(origin: string, trusted: string) {
+    const { email, password } = await h.signUpAs('Native');
+    const response = await h.request('/api/auth/sign-in/email', {
+      method: 'POST',
+      origin,
+      body: { email, password },
+      env: { TRUSTED_ORIGINS: trusted },
+    });
+    return response.status;
+  }
+
+  it('signs in from Expo Go when exp:// is trusted, as it is locally', async () => {
+    expect(await signInFrom(expoGo, 'fineduapp://,exp://')).toBe(200);
+  });
+
+  it('refuses Expo Go when only the app scheme is trusted, as in production', async () => {
+    expect(await signInFrom(expoGo, 'fineduapp://')).toBe(403);
+  });
+
+  it('signs in from a built app with production settings', async () => {
+    expect(await signInFrom('fineduapp://', 'fineduapp://')).toBe(200);
+  });
+});
+
+describe('cross-site requests', () => {
+  it('refuses a signed-in request from an untrusted site', async () => {
+    const cookie = await h.signUp('Target');
+    const response = await h.request('/api/auth/update-user', {
+      method: 'POST',
+      origin: 'https://evil.example',
+      cookie,
+      body: { name: 'Hijacked' },
+    });
+    expect(response.status).toBe(403);
+  });
+});

@@ -104,8 +104,10 @@ pnpm dev:mobile
 ```
 
 The API serves on `http://localhost:8787`; press `w` in the Expo terminal for
-web. On a physical device, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env.local`
-to your machine's LAN IP rather than `localhost`.
+web. To use Expo Go on a phone, run `pnpm dev:api:lan` instead of `pnpm dev:api`
+so the phone can reach the API. The app swaps `localhost` for your machine's
+address on its own, so `.env.local` does not need editing. The phone and the
+laptop must be on the same network.
 
 ## Everyday commands
 

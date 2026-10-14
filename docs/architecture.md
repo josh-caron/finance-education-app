@@ -206,7 +206,6 @@ both tabs and a completed lesson's XP update on web and a native device.
 - **Email in production.** Verification and password reset are built and tested, but
   nothing is sent until the project domain is verified in Resend and `RESEND_API_KEY` is
   set. Steps are in `docs/operations.md`.
-- **Native sign-in on a device.** Untested, and likely needs the Expo Go origin trusted.
-  See `docs/known-issues.md`.
-- **More content (7).** Three units are authored: budgeting and saving, banking and
-  emergency savings, and money basics.
+- **A native build.** The app runs on an iPhone through Expo Go against a local API, but
+  there is no development or release build yet, so it cannot use the deployed API. See
+  `docs/known-issues.md`.
