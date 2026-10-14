@@ -54,10 +54,12 @@
     // Only cross-origin callers need listing. The web client is same-origin
     // now, so this is just the native app's scheme.
     "TRUSTED_ORIGINS": "fineduapp://",
+    // Verified in Resend. A subdomain, so its records cannot disturb mail on the
+    // root domain. Sending also needs the RESEND_API_KEY secret; see "Email" in
+    // docs/operations.md.
+    "EMAIL_FROM": "Finance Education App <noreply@notify.josh-caron.com>",
   },
 
-  // Auth email is off until EMAIL_FROM is added here and RESEND_API_KEY is set
-  // as a secret; see "Email" in docs/operations.md.
   //
   // BETTER_AUTH_SECRET is a secret, never a var:
   //   local:  apps/api/.dev.vars, written by `pnpm setup:local`

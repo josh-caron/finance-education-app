@@ -203,9 +203,9 @@ both tabs and a completed lesson's XP update on web and a native device.
 
 ## Not built yet
 
-- **Email in production.** Verification and password reset are built and tested, but
-  nothing is sent until the project domain is verified in Resend and `RESEND_API_KEY` is
-  set. Steps are in `docs/operations.md`.
+- **A project domain.** Auth email is sent from `notify.josh-caron.com`, a subdomain of a
+  personal domain, until the project has its own. Moving means verifying the new domain
+  in Resend and changing `EMAIL_FROM` in `wrangler.jsonc`.
 - **A native build.** The app runs on an iPhone through Expo Go against a local API, but
   there is no development or release build yet, so it cannot use the deployed API. See
   `docs/known-issues.md`.
