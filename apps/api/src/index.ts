@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
 
 import { withDb, withSession } from './middleware/session';
 import { pruneRateLimits, rateLimit } from './rate-limit';
+import { requestLog } from './request-log';
 import { contentRoutes } from './routes/content';
 import { leaderboardRoutes } from './routes/leaderboard';
 import { progressRoutes } from './routes/progress';
@@ -12,7 +12,8 @@ import type { AppEnv, Bindings } from './types';
 
 const app = new Hono<AppEnv>();
 
-app.use('*', logger());
+// Not hono/logger: it prints full URLs, and auth links carry tokens.
+app.use('*', requestLog);
 
 app.use('*', (c, next) =>
   cors({

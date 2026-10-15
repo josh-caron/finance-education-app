@@ -24,10 +24,8 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(auth)" />
-          <Stack.Screen
-            name="lesson/[lessonId]"
-            options={{ presentation: 'modal', headerShown: true, title: '' }}
-          />
+          {/* The lesson draws its own close button beside the progress bar. */}
+          <Stack.Screen name="lesson/[lessonId]" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
     </QueryClientProvider>

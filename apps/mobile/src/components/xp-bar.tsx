@@ -35,7 +35,7 @@ export function XpBar({
         accessibilityValue={{ min: 0, max: span, now: xpIntoLevel }}
         style={[styles.track, { backgroundColor: theme.backgroundElement }]}
       >
-        <View style={[styles.fill, { backgroundColor: theme.brand, width: `${percent}%` }]} />
+        <View style={[styles.fill, { backgroundColor: theme.accent, width: `${percent}%` }]} />
       </View>
     </View>
   );
@@ -44,6 +44,6 @@ export function XpBar({
 const styles = StyleSheet.create({
   container: { gap: Spacing.two },
   row: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  track: { height: 12, borderRadius: 6, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 6 },
+  track: { height: 16, borderRadius: 8, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 8 },
 });

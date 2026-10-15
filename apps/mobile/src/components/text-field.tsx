@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export function TextField({
@@ -26,6 +26,7 @@ export function TextField({
             color: theme.text,
             backgroundColor: theme.backgroundElement,
             borderColor: error ? theme.danger : theme.border,
+            fontFamily: Fonts.rounded,
           },
           style,
         ]}
@@ -48,10 +49,11 @@ export function TextField({
 const styles = StyleSheet.create({
   field: { gap: Spacing.two },
   input: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 2,
     paddingHorizontal: Spacing.three,
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

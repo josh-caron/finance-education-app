@@ -1,8 +1,9 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { levelForXp, toDayKey } from '@fin/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import {
@@ -11,13 +12,12 @@ import {
   toAnswer,
   type Draft,
 } from '@/components/exercises/exercise-view';
-import { LevelRing } from '@/components/level-ring';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { XpBar } from '@/components/xp-bar';
 import { UnitCelebration } from '@/components/unit-celebration';
 import { getUnitCelebration } from '@/lib/unit-celebration';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { apiFetch, apiPost } from '@/lib/api';
 import { describeError } from '@/lib/errors';
@@ -143,32 +143,26 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
           </View>
         ) : null}
         <View style={styles.celebration}>
-          <ThemedText type="subtitle">
-            {leveledUp ? `Level ${completion.level}` : 'Lesson complete'}
-          </ThemedText>
-
-          {completion.practice ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              You already banked the XP for these exercises.
-            </ThemedText>
-          ) : null}
-
-          <LevelRing
-            level={completion.level}
-            fraction={
-              completion.xpIntoLevel + completion.xpToNext === 0
-                ? 0
-                : completion.xpIntoLevel / (completion.xpIntoLevel + completion.xpToNext)
-            }
-          />
-
-          <ThemedText
+          <View
             style={[
-              styles.xpGain,
-              { color: completion.practice ? theme.textSecondary : theme.brand },
+              styles.trophy,
+              { backgroundColor: theme.accentSurface, borderBottomColor: theme.accentEdge },
             ]}
           >
-            {completion.practice ? 'Practice run' : `+${completion.xpEarned} XP`}
+            <MaterialCommunityIcons
+              name={leveledUp ? 'shield-star' : 'trophy'}
+              size={64}
+              color={theme.accent}
+            />
+          </View>
+
+          <Text style={[styles.celebrationTitle, { color: theme.accent }]}>
+            {leveledUp ? `Level ${completion.level}!` : 'Lesson complete!'}
+          </Text>
+          <ThemedText type="small" themeColor="textSecondary">
+            {completion.practice
+              ? 'Practice run. You already banked the XP for these exercises.'
+              : lesson.title}
           </ThemedText>
         </View>
 
@@ -179,9 +173,27 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
         />
 
         <View style={styles.summary}>
-          <SummaryTile label="First try" value={`${completion.score}%`} />
-          <SummaryTile label="Streak" value={`${completion.currentStreak}d`} />
-          <SummaryTile label="Total XP" value={String(completion.totalXp)} />
+          <SummaryTile
+            label="XP"
+            icon="lightning-bolt"
+            value={completion.practice ? '0' : `+${completion.xpEarned}`}
+            color={theme.accent}
+            edge={theme.accentEdge}
+          />
+          <SummaryTile
+            label="First try"
+            icon="target"
+            value={`${completion.score}%`}
+            color={theme.brand}
+            edge={theme.brandEdge}
+          />
+          <SummaryTile
+            label="Streak"
+            icon="fire"
+            value={String(completion.currentStreak)}
+            color={theme.streak}
+            edge={theme.streak}
+          />
         </View>
 
         {celebration?.nextLesson ? (
@@ -205,6 +217,8 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
   }
 
   const isLast = index === lesson.exercises.length - 1;
+  // Fill the bar as each exercise is passed, not when the next one opens.
+  const answered = index + (result?.correct ? 1 : 0);
   const answerReady = exercise && currentDraft ? toAnswer(exercise, currentDraft) !== null : false;
 
   function goToNext() {
@@ -226,10 +240,30 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
   return (
     <Screen>
       <View style={styles.header}>
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          {index + 1} of {lesson.exercises.length}
-        </ThemedText>
-        <ThemedText type="smallBold">{lesson.title}</ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Leave lesson"
+          hitSlop={12}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/learn'))}
+        >
+          <MaterialCommunityIcons name="close" size={28} color={theme.locked} />
+        </Pressable>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel={`${lesson.title}, exercise ${index + 1} of ${lesson.exercises.length}`}
+          accessibilityValue={{ min: 0, max: lesson.exercises.length, now: answered }}
+          style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}
+        >
+          <View
+            style={[
+              styles.progressFill,
+              {
+                backgroundColor: theme.brand,
+                width: `${(answered / lesson.exercises.length) * 100}%`,
+              },
+            ]}
+          />
+        </View>
       </View>
 
       {index === 0 && lesson.intro ? (
@@ -245,27 +279,6 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
           onChange={setDraft}
           disabled={result !== null}
         />
-      ) : null}
-
-      {result ? (
-        <View
-          style={[
-            styles.feedback,
-            { backgroundColor: result.correct ? theme.successSurface : theme.dangerSurface },
-          ]}
-        >
-          <ThemedText type="smallBold" themeColor={result.correct ? 'success' : 'danger'}>
-            {!result.correct
-              ? 'Not quite'
-              : result.xpAwarded > 0
-                ? `Correct · +${result.xpAwarded} XP`
-                : 'Correct · practice, already banked'}
-          </ThemedText>
-
-          {result.expected ? <ThemedText type="small">Answer: {result.expected}</ThemedText> : null}
-
-          {result.explanation ? <ThemedText type="small">{result.explanation}</ThemedText> : null}
-        </View>
       ) : null}
 
       {submit.isError ? (
@@ -287,14 +300,52 @@ function LessonPlayer({ lessonId }: { lessonId: string }) {
           disabled={!answerReady}
           loading={submit.isPending}
         />
-      ) : result.correct ? (
-        <Button
-          label={isLast ? 'Finish lesson' : 'Continue'}
-          onPress={goToNext}
-          loading={complete.isPending}
-        />
       ) : (
-        <Button label="Try again" onPress={retry} />
+        <View
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.feedback,
+            { backgroundColor: result.correct ? theme.successSurface : theme.dangerSurface },
+          ]}
+        >
+          <View style={styles.feedbackTitle}>
+            <MaterialCommunityIcons
+              name={result.correct ? 'check-circle' : 'close-circle'}
+              size={30}
+              color={result.correct ? theme.success : theme.danger}
+            />
+            <Text
+              style={[
+                styles.feedbackHeading,
+                { color: result.correct ? theme.success : theme.danger },
+              ]}
+            >
+              {!result.correct
+                ? 'Not quite'
+                : result.xpAwarded > 0
+                  ? `Nice work! +${result.xpAwarded} XP`
+                  : 'Correct! Already banked'}
+            </Text>
+          </View>
+
+          {result.expected ? (
+            <ThemedText type="smallBold" themeColor={result.correct ? 'success' : 'danger'}>
+              Answer: {result.expected}
+            </ThemedText>
+          ) : null}
+
+          {result.explanation ? <ThemedText type="small">{result.explanation}</ThemedText> : null}
+
+          {result.correct ? (
+            <Button
+              label={isLast ? 'Finish lesson' : 'Continue'}
+              onPress={goToNext}
+              loading={complete.isPending}
+            />
+          ) : (
+            <Button label="Try again" variant="danger" onPress={retry} />
+          )}
+        </View>
       )}
     </Screen>
   );
@@ -304,39 +355,67 @@ function levelFromXp(totalXp: number): number {
   return levelForXp(Math.max(0, totalXp)).level;
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+function SummaryTile({
+  label,
+  icon,
+  value,
+  color,
+  edge,
+}: {
+  label: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  value: string;
+  color: string;
+  edge: string;
+}) {
   const theme = useTheme();
 
   return (
-    <View style={[styles.tile, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText type="smallBold" style={styles.tileValue}>
-        {value}
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        {label}
-      </ThemedText>
+    <View
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
+      style={[styles.tile, { borderColor: color, borderBottomColor: edge }]}
+    >
+      <View style={[styles.tileHeader, { backgroundColor: color }]}>
+        <Text style={[styles.tileLabel, { color: theme.background }]}>{label.toUpperCase()}</Text>
+      </View>
+      <View style={styles.tileBody}>
+        <MaterialCommunityIcons name={icon} size={20} color={color} />
+        <Text style={[styles.tileValue, { color }]}>{value}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   centered: { alignItems: 'center', justifyContent: 'center' },
-  celebration: { alignItems: 'center', gap: Spacing.three },
-  xpGain: { fontSize: 28, lineHeight: 34, fontWeight: '700' },
-  summary: { flexDirection: 'row', gap: Spacing.two },
-  tile: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
+  celebration: { alignItems: 'center', gap: Spacing.two, paddingTop: Spacing.four },
+  trophy: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    borderBottomWidth: 6,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.two,
   },
-  tileValue: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
-  header: {
+  celebrationTitle: { fontFamily: Fonts.rounded, fontSize: 30, lineHeight: 36, fontWeight: '800' },
+  summary: { flexDirection: 'row', gap: Spacing.two },
+  tile: { flex: 1, borderRadius: 16, borderWidth: 2, borderBottomWidth: 4, overflow: 'hidden' },
+  tileHeader: { paddingVertical: Spacing.one, alignItems: 'center' },
+  tileLabel: { fontFamily: Fonts.rounded, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
+  tileBody: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+    paddingVertical: Spacing.two,
   },
-  feedback: { borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
+  tileValue: { fontFamily: Fonts.rounded, fontSize: 20, fontWeight: '800' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  progressTrack: { flex: 1, height: 16, borderRadius: 8, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 8 },
+  feedback: { borderRadius: 18, padding: Spacing.three, gap: Spacing.three },
+  feedbackTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  feedbackHeading: { fontFamily: Fonts.rounded, fontSize: 20, fontWeight: '800', flexShrink: 1 },
 });
