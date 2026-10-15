@@ -29,10 +29,10 @@ export const Colors = {
     dangerEdge: '#8F2626',
     dangerSurface: '#FCEBEB',
     /** XP and level accents. */
-    accent: '#BA7517',
+    accent: '#9A5F0E',
     accentSurface: '#FAEEDA',
     accentEdge: '#EBB45A',
-    streak: '#D85A30',
+    streak: '#B8461F',
     xp: '#185FA5',
     locked: '#7A7870',
     lockedSurface: '#F1EFE8',
