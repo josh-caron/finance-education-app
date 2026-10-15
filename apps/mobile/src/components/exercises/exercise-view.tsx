@@ -1,8 +1,11 @@
 import { parseNumericAnswer, type Answer, type PublicExercise } from '@fin/core';
-import { StyleSheet, View } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 import { ComputedAnswer } from './computed-answer';
 import { MultipleChoice } from './multiple-choice';
@@ -65,9 +68,12 @@ export function ExerciseView({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="default" style={styles.prompt}>
-        {exercise.prompt}
-      </ThemedText>
+      <KindBadge kind={exercise.kind} />
+
+      <View style={styles.ask}>
+        <Mascot size={48} />
+        <SpeechBubble>{exercise.prompt}</SpeechBubble>
+      </View>
 
       {exercise.kind !== 'computed_answer' && exercise.hint ? (
         <ThemedText type="small" themeColor="textSecondary">
@@ -106,7 +112,55 @@ export function ExerciseView({
   );
 }
 
+const kindLook = {
+  multiple_choice: { label: 'CHOOSE ONE', icon: 'gesture-tap' },
+  ordering: { label: 'PUT IN ORDER', icon: 'sort-numeric-ascending' },
+  computed_answer: { label: 'CALCULATE', icon: 'calculator-variant' },
+} as const;
+
+function KindBadge({ kind }: { kind: PublicExercise['kind'] }) {
+  const theme = useTheme();
+  const look = kindLook[kind];
+
+  return (
+    <View style={[styles.badge, { backgroundColor: theme.accentSurface }]}>
+      <MaterialCommunityIcons name={look.icon} size={16} color={theme.accent} />
+      <Text style={[styles.badgeText, { color: theme.accent }]}>{look.label}</Text>
+    </View>
+  );
+}
+
+function SpeechBubble({ children }: { children: string }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.bubble, { borderColor: theme.border }]}>
+      <ThemedText type="default" style={styles.prompt}>
+        {children}
+      </ThemedText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { gap: Spacing.four },
-  prompt: { fontSize: 20, lineHeight: 28, fontWeight: '600' },
+  ask: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  bubble: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 16,
+    borderTopLeftRadius: 4,
+    padding: Spacing.three,
+  },
+  prompt: { fontSize: 18, lineHeight: 26, fontWeight: '600' },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: Spacing.one,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  badgeText: { fontFamily: Fonts.rounded, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
 });

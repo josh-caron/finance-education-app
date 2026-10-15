@@ -1,11 +1,17 @@
-import { ActivityIndicator, Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
+/** How far a button sits above its edge, and how far it sinks when pressed. */
+const EDGE = 4;
+
+/**
+ * The chunky button: a solid face over a darker edge. Pressing sinks the face
+ * into the edge rather than fading it, which is what makes it feel physical.
+ */
 export function Button({
   label,
   onPress,
@@ -24,13 +30,27 @@ export function Button({
   const theme = useTheme();
   const isInactive = disabled || loading;
 
-  const background =
+  const colors =
     variant === 'primary'
-      ? theme.brand
+      ? { face: theme.brand, edge: theme.brandEdge, label: theme.brandText, outline: theme.brand }
       : variant === 'danger'
-        ? theme.danger
-        : theme.backgroundElement;
-  const labelColor = variant === 'secondary' ? theme.text : theme.brandText;
+        ? {
+            face: theme.danger,
+            edge: theme.dangerEdge,
+            label: theme.brandText,
+            outline: theme.danger,
+          }
+        : {
+            face: theme.background,
+            edge: theme.elementEdge,
+            label: theme.text,
+            outline: theme.border,
+          };
+
+  // A disabled button goes flat and grey, so it never looks pressable.
+  const face = disabled ? theme.lockedSurface : colors.face;
+  const edge = disabled ? theme.border : colors.edge;
+  const labelColor = disabled ? theme.locked : colors.label;
 
   return (
     <Pressable
@@ -38,28 +58,49 @@ export function Button({
       accessibilityState={{ disabled: isInactive, busy: loading }}
       disabled={isInactive}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: background, opacity: isInactive ? 0.5 : pressed ? 0.85 : 1 },
-        style,
-      ]}
+      style={[styles.pressable, style]}
     >
-      {loading ? (
-        <ActivityIndicator color={labelColor} />
-      ) : (
-        <ThemedText style={[styles.label, { color: labelColor }]}>{label}</ThemedText>
-      )}
+      {({ pressed }) => {
+        const sunk = pressed && !isInactive;
+        return (
+          <View
+            style={[
+              styles.face,
+              {
+                backgroundColor: face,
+                borderColor: variant === 'secondary' && !disabled ? colors.outline : face,
+                borderBottomColor: edge,
+                borderBottomWidth: sunk ? 2 : EDGE,
+                marginTop: sunk ? EDGE - 2 : 0,
+              },
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator color={labelColor} />
+            ) : (
+              <Text style={[styles.label, { color: labelColor }]}>{label.toUpperCase()}</Text>
+            )}
+          </View>
+        );
+      }}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
+  pressable: { minHeight: 52 + EDGE },
+  face: {
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
   },
-  label: { fontWeight: '700' },
+  label: {
+    fontFamily: Fonts.rounded,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
 });

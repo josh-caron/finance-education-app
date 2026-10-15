@@ -1,7 +1,17 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Redirect, Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { useSession } from '@/lib/auth-client';
+
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+function tabIcon(name: IconName) {
+  return function TabIcon({ color, size }: { color: ColorValue; size: number }) {
+    return <MaterialCommunityIcons name={name} size={size} color={color} />;
+  };
+}
 
 export default function TabsLayout() {
   const theme = useTheme();
@@ -16,13 +26,20 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.brand,
-        tabBarInactiveTintColor: theme.textSecondary,
-        tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
+        tabBarInactiveTintColor: theme.locked,
+        tabBarStyle: {
+          backgroundColor: theme.background,
+          borderTopColor: theme.border,
+          borderTopWidth: 2,
+        },
       }}
     >
-      <Tabs.Screen name="learn" options={{ title: 'Learn' }} />
-      <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="learn" options={{ title: 'Learn', tabBarIcon: tabIcon('home-variant') }} />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{ title: 'Leaderboard', tabBarIcon: tabIcon('trophy') }}
+      />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('account') }} />
     </Tabs>
   );
 }

@@ -46,7 +46,11 @@ export function Ordering({
             onPress={() => onChange(order.filter((candidate) => candidate !== id))}
             style={[
               styles.slot,
-              { backgroundColor: theme.backgroundSelected, borderColor: theme.brand },
+              {
+                backgroundColor: theme.backgroundSelected,
+                borderColor: theme.brand,
+                borderBottomColor: theme.brandEdge,
+              },
             ]}
           >
             <ThemedText type="smallBold" themeColor="brand">
@@ -66,7 +70,11 @@ export function Ordering({
             onPress={() => onChange([...order, item.id])}
             style={[
               styles.slot,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              {
+                backgroundColor: theme.background,
+                borderColor: theme.border,
+                borderBottomColor: theme.elementEdge,
+              },
             ]}
           >
             <ThemedText type="default">{item.label}</ThemedText>
@@ -84,8 +92,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
+    borderBottomWidth: 4,
     padding: Spacing.three,
   },
 });

@@ -35,12 +35,15 @@ export function MultipleChoice({
             style={[
               styles.choice,
               {
-                backgroundColor: isSelected ? theme.backgroundSelected : theme.backgroundElement,
+                backgroundColor: isSelected ? theme.backgroundSelected : theme.background,
                 borderColor: isSelected ? theme.brand : theme.border,
+                borderBottomColor: isSelected ? theme.brandEdge : theme.elementEdge,
               },
             ]}
           >
-            <ThemedText type="default">{choice.label}</ThemedText>
+            <ThemedText type="default" themeColor={isSelected ? 'success' : 'text'}>
+              {choice.label}
+            </ThemedText>
           </Pressable>
         );
       })}
@@ -51,8 +54,9 @@ export function MultipleChoice({
 const styles = StyleSheet.create({
   choices: { gap: Spacing.two },
   choice: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
+    borderBottomWidth: 4,
     padding: Spacing.three,
   },
 });
