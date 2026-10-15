@@ -467,3 +467,18 @@ describe('cross-site requests', () => {
     expect(response.status).toBe(403);
   });
 });
+
+describe('request logging', () => {
+  it('never writes an auth token to the logs', async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, 'log').mockImplementation((...args) => lines.push(args.join(' ')));
+
+    await h.request('/api/auth/verify-email?token=verify-secret-123&callbackURL=%2F');
+    await h.request('/api/auth/reset-password/reset-secret-456?callbackURL=%2Freset-password');
+
+    const logged = lines.join('\n');
+    expect(logged).toContain('/api/auth/verify-email?token=[redacted]');
+    expect(logged).toContain('/api/auth/reset-password/[redacted]');
+    expect(logged).not.toMatch(/verify-secret-123|reset-secret-456/);
+  });
+});
